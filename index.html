@@ -3,22 +3,281 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HookeUI</title>
-<meta name="description" content="HookeUI: coming soon.">
-<style>
-:root { --bg: #f6f7f5; --fg: #1b2420; --muted: #5d6a64; color-scheme: light dark; }
-@media (prefers-color-scheme: dark) { :root { --bg: #121715; --fg: #e4ebe7; --muted: #9aa8a1; } }
-html, body { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  display: grid; place-items: center; padding: 16px; box-sizing: border-box; text-align: center; }
-h1 { font: 600 clamp(32px, 8vw, 56px)/1.1 Georgia, "Iowan Old Style", serif; margin: 0 0 8px; }
-p { margin: 0; color: var(--muted); }
-</style>
+<title>Hooke: open-source microscopy workspace for the Mac</title>
+<meta name="description" content="Hooke is an open-source platform for finding, turning on and running microscopy and bioimage-analysis models on the Mac, with no terminal.">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:title" content="Hooke">
+<meta property="og:description" content="Image analysis at the speed new models arrive.">
+<meta property="og:image" content="https://hookeui.org/media/hero.jpg">
+<meta property="og:url" content="https://hookeui.org/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-<h1>HookeUI</h1>
-<p>Coming soon.</p>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="#top" aria-label="Hooke home">
+      <img src="favicon.svg" alt="" width="24" height="24">
+      <span>Hooke</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#models">Models</a>
+      <a href="#open">Open source</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/wpulier/hookeui.org">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap">
+      <p class="status"><span class="dot" aria-hidden="true"></span>Preview. The first release is not out yet.</p>
+      <h1>Hooke</h1>
+      <p class="tagline">Image analysis at the speed new models arrive.</p>
+      <p class="lede">An open-source platform for finding, turning on and running the hundreds of models in microscopy and bioimage analysis, with new ones published every week. Run them on your camera, recordings or images, and compare them on the same specimen. No terminal, no broken environments.</p>
+      <div class="actions">
+        <button class="button primary" type="button" disabled aria-describedby="dl-note">Download for Mac</button>
+        <a class="button" href="#install">Install from source</a>
+      </div>
+      <p class="note" id="dl-note">Apple silicon only. The signed download will be available with the first release.</p>
+      <figure class="frame hero-media">
+        <video class="loop" muted loop playsinline preload="metadata" poster="media/hero.jpg" aria-label="One click outlines and names the pith of a stained plant stem; a question about the cells around it is answered in the chat">
+          <source src="media/hero.mp4" type="video/mp4">
+        </video>
+      </figure>
+      <p class="caption">A recording of a stained plant stem, opened in HookeUI. One click outlines the pith and names it; the chat answers a question about the view. Real time.</p>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>
+          <h3>Find a model</h3>
+          <p>Browse the catalog, paste a BioImage Model Zoo or Hugging Face link, or add a Fiji function or one a colleague shared.</p>
+        </li>
+        <li>
+          <h3>Turn it on</h3>
+          <p>One action: Download for a model that runs on your Mac, Add key for a cloud model. A model with its own code gets its own environment, checked before use.</p>
+        </li>
+        <li>
+          <h3>Use it on your specimen</h3>
+          <p>Click, run it from Actions, or ask for it in plain language. Run several on the same view and compare them side by side.</p>
+        </li>
+      </ol>
+      <div class="grid six">
+        <div class="cell">
+          <h3>Compare models</h3>
+          <p>Outline or segment the same view with two or more models and see their results and overlap measured side by side.</p>
+        </div>
+        <div class="cell">
+          <h3>Share what you add</h3>
+          <p>Add a model once and share it as a file or publish it to the catalog. Others get it as an update, with no new app release.</p>
+        </div>
+        <div class="cell">
+          <h3>Provenance</h3>
+          <p>Each result records the model, version and settings that made it, so a result can be repeated.</p>
+        </div>
+        <div class="cell">
+          <h3>Outline and measure</h3>
+          <p>Outline anything with a click, or segment every cell and get per-cell measurements as CSV.</p>
+        </div>
+        <div class="cell">
+          <h3>Track</h3>
+          <p>Follow a moving object, or measure the speed of everything moving with the slide’s motion removed.</p>
+        </div>
+        <div class="cell">
+          <h3>Local first</h3>
+          <p>Sessions are saved on your Mac. Cloud models are optional and use your own API key.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="wrap">
+      <h2>Try it without a camera or key</h2>
+      <div class="row">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="none" poster="media/example.jpg" aria-label="The example walkthrough finding and measuring bright regions in an image of human cells">
+            <source src="media/example.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <div class="text">
+          <p><strong>Try an example</strong> opens a microscope image of human cells, finds the bright regions with a basic local method (Otsu threshold) and opens their measurements.</p>
+          <p>It needs no account, API key, model download or camera. A bright region is not necessarily one cell; the example shows how results are kept, not biological accuracy.</p>
+          <p class="caption">Image: human mitosis, David Root, CC0, via scikit-image.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>Examples</h2>
+      <p class="sub">Recorded in HookeUI on recordings from a real microscope.</p>
+
+      <div class="row">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="none" poster="media/follow.jpg" aria-label="A sperm cell clicked once, outlined and followed as it swims, with its path drawn">
+            <source src="media/follow.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <div class="text">
+          <h3>Follow a moving object</h3>
+          <p>One click outlines the cell with EdgeTAM. The outline follows it and its path is drawn with its length. Without a calibrated scale, distances are in pixels.</p>
+          <p class="caption">Sperm wet mount. The name is a vision model’s best guess, marked “Probably” until confirmed.</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="none" poster="media/cells.jpg" aria-label="Cellpose-SAM outlining every cell in a plant stem section">
+            <source src="media/cells.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <div class="text">
+          <h3>Segment and measure every cell</h3>
+          <p>Cellpose-SAM outlined 1,523 cells in this view in about 20 seconds on an Apple silicon Mac. Each cell is measured by the app’s own code.</p>
+          <p class="caption">Stained plant stem section. Clip shortened while the model ran.</p>
+        </div>
+      </div>
+
+      <figure class="frame still">
+        <img src="media/table.jpg" alt="The Measurements table for the 1,523 cells: medians and middle halves, then one row per cell with area, perimeter, length, width, elongation, roundness, solidity, brightness and position" width="1030" height="560">
+      </figure>
+      <p class="caption">Their measurements, sortable, with Download CSV. Sizes are in pixels until an objective or calibration is set.</p>
+
+      <div class="row">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="none" poster="media/motion.jpg" aria-label="Every moving spot tracked over four seconds in a sperm wet mount">
+            <source src="media/motion.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <div class="text">
+          <h3>Measure motion</h3>
+          <p>Asked “How fast are they swimming?”, the app tracked moving spots over 4 seconds: 527 tracked, 153 actively swimming, median net speed 13 px/s, in pixels because no scale was set.</p>
+          <p>Asked earlier while the slide was drifting, it said it could not measure and why.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="models">
+    <div class="wrap">
+      <h2>Models</h2>
+      <p class="sub">HookeUI runs established models and tools. Each keeps its own licence, shown before it is turned on. Please cite the ones you use.</p>
+      <div class="grid eco">
+        <div>
+          <h4>Segmentation</h4>
+          <ul>
+            <li><b>Cellpose-SAM</b> Pachitariu, Rariden, Stringer</li>
+            <li><b>micro-sam</b> Archit, Pape et al.</li>
+            <li><b>SAM 3.1</b> Meta AI</li>
+            <li><b>InstanSeg</b> Goldsborough, Bankhead et al.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Outlining and tracking</h4>
+          <ul>
+            <li><b>EdgeTAM</b> Meta Reality Labs</li>
+            <li><b>Trackastra</b> Gallusser, Weigert</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Registration</h4>
+          <ul>
+            <li><b>brainreg</b> BrainGlobe</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Fiji</h4>
+          <ul>
+            <li><b>Analyze Particles</b> Runs through a reviewed binding, matching its macro</li>
+          </ul>
+        </div>
+      </div>
+      <div class="grid three facts">
+        <div>
+          <h3>Add from a link</h3>
+          <p>A BioImage Model Zoo or Hugging Face link, or your own trained Cellpose model.</p>
+        </div>
+        <div>
+          <h3>Separate environments</h3>
+          <p>A model with its own code installs into its own locked Python environment, so installs don’t conflict.</p>
+        </div>
+        <div>
+          <h3>Pinned files</h3>
+          <p>Weights are pinned to a revision and checked by size and hash. They download only when you choose.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="open">
+    <div class="wrap">
+      <h2>Open source</h2>
+      <div class="grid three facts">
+        <div>
+          <h3>Licence</h3>
+          <p>Apache 2.0 for HookeUI’s own code, with a Developer Certificate of Origin sign-off. Being finalised for the first release.</p>
+        </div>
+        <div>
+          <h3>Provenance</h3>
+          <p>Each result records the model, version and settings that made it. Shared images list what made them.</p>
+        </div>
+        <div>
+          <h3>Contributing</h3>
+          <p>Models, examples, corrections and documentation. The forum opens with the first release.</p>
+        </div>
+      </div>
+      <p class="caption">HookeUI is developed with AI coding assistants. It is named after Robert Hooke, whose <cite>Micrographia</cite> (1665) recorded what he saw through his microscope.</p>
+    </div>
+  </section>
+
+  <section class="section alt" id="install">
+    <div class="wrap">
+      <h2>Install</h2>
+      <div class="grid two">
+        <div>
+          <h3>Requirements</h3>
+          <table class="reqs">
+            <tr><th scope="row">System</th><td>macOS on Apple silicon</td></tr>
+            <tr><th scope="row">Without a key</th><td>The example and local models</td></tr>
+            <tr><th scope="row">With a key</th><td>Chat, voice and naming via a cloud provider</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3>From source</h3>
+          <div class="code">
+            <button class="copy-btn" type="button" data-copy="install-cmds">Copy</button>
+            <pre><code id="install-cmds">git clone https://github.com/wpulier/HookeUI
+cd HookeUI
+make setup
+make start</code></pre>
+          </div>
+          <p class="caption">Available when the repository is published with the first release.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </main>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <p>HookeUI is an independent project by Will Pulier, not affiliated with Fiji or ImageJ.</p>
+    <p><a href="https://github.com/wpulier/hookeui.org">Website source</a>. No analytics or cookies.</p>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
 </body>
 </html>
