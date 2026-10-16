@@ -56,4 +56,10 @@ shortened by cuts, and say so.
 | No terminal | The Toolbox's Download, Install, Add key and Turn on run in the app (AGENTS.md "Environments the app makes", "The models folder") |
 | Run several on the same view and compare them, overlap measured | AGENTS.md "Named comparisons" (`compare_models`: side by side, areas, IoU) |
 | Share as a file or publish to the catalog; others get it as an update with no app release | AGENTS.md "Share" (`share.py`), "Publishing", "Channels" (catalog updates with no app update) |
+| Models, algorithms and Fiji functions come from one shared catalog; an entry can be a model, algorithm, Fiji function, cloud model or dataset | `catalog/models/*/model.toml` (`kind`: model, tool-function, cloud-model, data); ADR 0018 |
+| New entries reach you as catalog updates, without a new app | AGENTS.md "Channels" (Check for catalog updates, no app update), "New for you" |
+| Have an AI assistant draft the adapter, tried in a sandbox before use | AGENTS.md "Have an AI build it" (`drafts.py`, `try_draft` in the sandbox) |
+| Send it as a file anyone can open, or publish it to the reviewed catalog | AGENTS.md "Share" (`share.py`), "Publishing" (`publish.py`) |
+| In the catalog now: Cellpose-SAM, micro-sam, SAM 3.1, EdgeTAM, InstanSeg, Trackastra, DINOv3, BioCLIP 2; Bright objects, Spot measure, Spot shape, brainreg; Analyze Particles, Gaussian Blur, Subtract Background; Gemini, GPT, Claude, SAM 3.1 (cloud); Allen mouse brain atlas | Each a folder in `catalog/models/` with its `kind` and `runs` |
+| Fiji functions run headless in a pinned Fiji, each proven to match the same ImageJ macro | `catalog/models/fiji-*/model.toml` headers; ADR 0024; AGENTS.md "Fiji, its plugins and bindings" |
 | No analytics or cookies on this site | This repository: no script but `site.js`, no third-party requests |

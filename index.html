@@ -25,8 +25,8 @@
     </a>
     <nav aria-label="Sections">
       <a href="#open">Open source</a>
-      <a href="#see">See it work</a>
       <a href="#features">How it works</a>
+      <a href="#see">See it work</a>
       <a href="#models">Models</a>
       <a href="#install">Install</a>
       <a href="https://github.com/wpulier/hookeui.org">GitHub</a>
@@ -80,7 +80,27 @@
     </div>
   </section>
 
-  <section class="section" id="see">
+  <section class="section" id="features">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>
+          <h3>Find a model</h3>
+          <p>Browse the catalog, paste a BioImage Model Zoo or Hugging Face link, or add a Fiji function or one a colleague shared.</p>
+        </li>
+        <li>
+          <h3>Turn it on</h3>
+          <p>One action: Download for a model that runs on your Mac, Add key for a cloud model. A model with its own code gets its own environment, checked before use.</p>
+        </li>
+        <li>
+          <h3>Use it on your specimen</h3>
+          <p>Click, run it from Actions, or ask for it in plain language. Run several on the same view and compare them side by side.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section alt" id="see">
     <div class="wrap">
       <h2>See it work</h2>
       <p class="sub">Recorded in Hooke on recordings from a real microscope.</p>
@@ -129,99 +149,75 @@
     </div>
   </section>
 
-  <section class="section alt" id="features">
-    <div class="wrap">
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li>
-          <h3>Find a model</h3>
-          <p>Browse the catalog, paste a BioImage Model Zoo or Hugging Face link, or add a Fiji function or one a colleague shared.</p>
-        </li>
-        <li>
-          <h3>Turn it on</h3>
-          <p>One action: Download for a model that runs on your Mac, Add key for a cloud model. A model with its own code gets its own environment, checked before use.</p>
-        </li>
-        <li>
-          <h3>Use it on your specimen</h3>
-          <p>Click, run it from Actions, or ask for it in plain language. Run several on the same view and compare them side by side.</p>
-        </li>
-      </ol>
-      <div class="grid six">
-        <div class="cell">
-          <h3>Compare models</h3>
-          <p>Outline or segment the same view with two or more models and see their results and overlap measured side by side.</p>
-        </div>
-        <div class="cell">
-          <h3>Share what you add</h3>
-          <p>Add a model once and share it as a file or publish it to the catalog. Others get it as an update, with no new app release.</p>
-        </div>
-        <div class="cell">
-          <h3>Provenance</h3>
-          <p>Each result records the model, version and settings that made it, so a result can be repeated.</p>
-        </div>
-        <div class="cell">
-          <h3>Outline and measure</h3>
-          <p>Outline anything with a click, or segment every cell and get per-cell measurements as CSV.</p>
-        </div>
-        <div class="cell">
-          <h3>Track</h3>
-          <p>Follow a moving object, or measure the speed of everything moving with the slide’s motion removed.</p>
-        </div>
-        <div class="cell">
-          <h3>Local first</h3>
-          <p>Sessions are saved on your Mac. Cloud models are optional and use your own API key.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section class="section" id="models">
     <div class="wrap">
-      <h2>Models</h2>
-      <p class="sub">HookeUI runs established models and tools. Each keeps its own licence, shown before it is turned on. Please cite the ones you use.</p>
-      <div class="grid eco">
-        <div>
-          <h4>Segmentation</h4>
-          <ul>
-            <li><b>Cellpose-SAM</b> Pachitariu, Rariden, Stringer</li>
-            <li><b>micro-sam</b> Archit, Pape et al.</li>
-            <li><b>SAM 3.1</b> Meta AI</li>
-            <li><b>InstanSeg</b> Goldsborough, Bankhead et al.</li>
-          </ul>
+      <h2>Models, algorithms and capabilities</h2>
+      <p class="sub">Hooke’s models, algorithms and Fiji functions come from one shared catalog. An entry can be a segmentation model, a classic algorithm, a Fiji function, a cloud model or a dataset. Anyone can add one, and everyone can run it.</p>
+
+      <ol class="loop">
+        <li>
+          <h3>The community adds it</h3>
+          <p>Each model, algorithm or Fiji function is one catalog entry, added by the people who use it. New entries reach you as catalog updates, without a new app.</p>
+        </li>
+        <li>
+          <h3>You turn it on</h3>
+          <p>Download for one that runs on your Mac, Add key for a cloud model. Files are pinned and checked; one with its own code gets its own environment. Nothing to set up in a terminal.</p>
+        </li>
+        <li>
+          <h3>You add your own</h3>
+          <p>Paste a BioImage Model Zoo or Hugging Face link, drop in a Cellpose model you trained, or have an AI assistant draft the adapter, tried in a sandbox before you use it.</p>
+        </li>
+        <li>
+          <h3>You share it back</h3>
+          <p>Send it as a file anyone can open, or publish it to the reviewed catalog. Results record which entries made them, so others can turn on the same ones.</p>
+        </li>
+      </ol>
+
+      <div class="catalog">
+        <h3>In the catalog now</h3>
+        <div class="kinds">
+          <div class="kind">
+            <h4><span class="tag local">On your Mac</span> Models</h4>
+            <ul>
+              <li><b>Cellpose-SAM</b> Pachitariu, Rariden, Stringer</li>
+              <li><b>micro-sam</b> Archit, Pape et al.</li>
+              <li><b>SAM 3.1</b> Meta AI</li>
+              <li><b>EdgeTAM</b> Meta Reality Labs</li>
+              <li><b>InstanSeg</b> Goldsborough, Bankhead et al.</li>
+              <li><b>Trackastra</b> Gallusser, Weigert</li>
+              <li><b>DINOv3</b>, <b>BioCLIP 2</b> image embeddings</li>
+            </ul>
+          </div>
+          <div class="kind">
+            <h4><span class="tag local">On your Mac</span> Algorithms</h4>
+            <ul>
+              <li><b>Bright objects</b> Otsu threshold and connected regions</li>
+              <li><b>Spot measure</b>, <b>Spot shape</b> spots, sizes and roundness</li>
+              <li><b>brainreg</b> whole-brain registration, BrainGlobe</li>
+            </ul>
+          </div>
+          <div class="kind">
+            <h4><span class="tag local">On your Mac</span> Fiji functions</h4>
+            <ul>
+              <li><b>Analyze Particles</b></li>
+              <li><b>Gaussian Blur</b></li>
+              <li><b>Subtract Background</b></li>
+            </ul>
+            <p class="small">Run headless in a pinned Fiji, each proven to match the same ImageJ macro.</p>
+          </div>
+          <div class="kind">
+            <h4><span class="tag cloud">Your key</span> Cloud models</h4>
+            <ul>
+              <li><b>Gemini</b>, <b>GPT</b>, <b>Claude</b> vision and chat</li>
+              <li><b>SAM 3.1</b> hosted</li>
+            </ul>
+            <h4 class="next"><span class="tag local">On your Mac</span> Data</h4>
+            <ul>
+              <li><b>Allen mouse brain atlas</b> 25 µm</li>
+            </ul>
+          </div>
         </div>
-        <div>
-          <h4>Outlining and tracking</h4>
-          <ul>
-            <li><b>EdgeTAM</b> Meta Reality Labs</li>
-            <li><b>Trackastra</b> Gallusser, Weigert</li>
-          </ul>
-        </div>
-        <div>
-          <h4>Registration</h4>
-          <ul>
-            <li><b>brainreg</b> BrainGlobe</li>
-          </ul>
-        </div>
-        <div>
-          <h4>Fiji</h4>
-          <ul>
-            <li><b>Analyze Particles</b> Runs through a reviewed binding, matching its macro</li>
-          </ul>
-        </div>
-      </div>
-      <div class="grid three facts">
-        <div>
-          <h3>Add from a link</h3>
-          <p>A BioImage Model Zoo or Hugging Face link, or your own trained Cellpose model.</p>
-        </div>
-        <div>
-          <h3>Separate environments</h3>
-          <p>A model with its own code installs into its own locked Python environment, so installs don’t conflict.</p>
-        </div>
-        <div>
-          <h3>Pinned files</h3>
-          <p>Weights are pinned to a revision and checked by size and hash. They download only when you choose.</p>
-        </div>
+        <p class="small">Each entry keeps its own licence, shown before you turn it on. Please cite the ones you use.</p>
       </div>
     </div>
   </section>
@@ -252,6 +248,8 @@ make start</code></pre>
       </div>
     </div>
   </section>
+
+
 
 
 
