@@ -24,9 +24,10 @@
       <span>Hooke</span>
     </a>
     <nav aria-label="Sections">
-      <a href="#features">Features</a>
-      <a href="#models">Models</a>
       <a href="#open">Open source</a>
+      <a href="#see">See it work</a>
+      <a href="#features">How it works</a>
+      <a href="#models">Models</a>
       <a href="#install">Install</a>
       <a href="https://github.com/wpulier/hookeui.org">GitHub</a>
     </nav>
@@ -34,28 +35,101 @@
 </header>
 
 <main id="top">
-
   <section class="hero">
-    <div class="wrap">
-      <p class="status"><span class="dot" aria-hidden="true"></span>Preview. The first release is not out yet.</p>
-      <h1>Hooke</h1>
-      <p class="tagline">Image analysis at the speed new models arrive.</p>
-      <p class="lede">An open-source platform for finding, turning on and running the hundreds of models in microscopy and bioimage analysis, with new ones published every week. Run them on your camera, recordings or images, and compare them on the same specimen. No terminal, no broken environments.</p>
-      <div class="actions">
-        <button class="button primary" type="button" disabled aria-describedby="dl-note">Download for Mac</button>
-        <a class="button" href="#install">Install from source</a>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="status"><span class="dot" aria-hidden="true"></span>Preview. The first release is not out yet.</p>
+        <h1>Hooke</h1>
+        <p class="tagline">Image analysis at the speed new models arrive.</p>
+        <p class="lede">An open-source platform for finding, turning on and running the hundreds of models in microscopy and bioimage analysis, with new ones published every week. Run them on your camera, recordings or images, and compare them on the same specimen. No terminal, no broken environments.</p>
+        <div class="actions">
+          <button class="button primary" type="button" disabled aria-describedby="dl-note">Download for Mac</button>
+          <a class="button" href="#install">Install from source</a>
+        </div>
+        <p class="note" id="dl-note">Apple silicon only. The signed download will be available with the first release.</p>
       </div>
-      <p class="note" id="dl-note">Apple silicon only. The signed download will be available with the first release.</p>
-      <figure class="frame hero-media">
-        <video class="loop" muted loop playsinline preload="metadata" poster="media/hero.jpg" aria-label="One click outlines and names the pith of a stained plant stem; a question about the cells around it is answered in the chat">
-          <source src="media/hero.mp4" type="video/mp4">
-        </video>
-      </figure>
-      <p class="caption">A recording of a stained plant stem, opened in HookeUI. One click outlines the pith and names it; the chat answers a question about the view. Real time.</p>
+      <div class="hero-visual">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="metadata" poster="media/hero.jpg" aria-label="One click outlines and names the pith of a stained plant stem; a question about the cells around it is answered in the chat">
+            <source src="media/hero.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <p class="caption">A recording of a stained plant stem in Hooke. One click outlines the pith and names it; the chat answers a question about the view. Real time.</p>
+      </div>
     </div>
   </section>
 
-  <section class="section" id="features">
+  <section class="section alt" id="open">
+    <div class="wrap">
+      <h2>Open source</h2>
+      <div class="grid three facts">
+        <div>
+          <h3>Licence</h3>
+          <p>Apache 2.0 for HookeUI’s own code, with a Developer Certificate of Origin sign-off. Being finalised for the first release.</p>
+        </div>
+        <div>
+          <h3>Provenance</h3>
+          <p>Each result records the model, version and settings that made it. Shared images list what made them.</p>
+        </div>
+        <div>
+          <h3>Contributing</h3>
+          <p>Models, examples, corrections and documentation. The forum opens with the first release.</p>
+        </div>
+      </div>
+      <p class="caption">HookeUI is developed with AI coding assistants. It is named after Robert Hooke, whose <cite>Micrographia</cite> (1665) recorded what he saw through his microscope.</p>
+    </div>
+  </section>
+
+  <section class="section" id="see">
+    <div class="wrap">
+      <h2>See it work</h2>
+      <p class="sub">Recorded in Hooke on recordings from a real microscope.</p>
+      <div class="demos">
+        <article class="demo">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/example.jpg" aria-label="The example walkthrough finding and measuring bright regions in an image of human cells">
+              <source src="media/example.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3>Try it without a camera or key</h3>
+          <p><strong>Try an example</strong> opens a microscope image of human cells, finds bright regions with an Otsu threshold and opens their measurements. No account, key, download or camera.</p>
+          <p class="caption">Human mitosis, David Root, CC0, via scikit-image. A bright region is not necessarily one cell.</p>
+        </article>
+        <article class="demo">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/follow.jpg" aria-label="A sperm cell clicked once, outlined and followed as it swims, with its path drawn">
+              <source src="media/follow.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3>Follow a moving object</h3>
+          <p>One click outlines the cell with EdgeTAM; the outline follows it and draws its path and length.</p>
+          <p class="caption">Sperm wet mount. The name is a vision model’s best guess, marked “Probably” until confirmed.</p>
+        </article>
+        <article class="demo">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/cells.jpg" aria-label="Cellpose-SAM outlining every cell in a plant stem section">
+              <source src="media/cells.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3>Segment and measure every cell</h3>
+          <p>Cellpose-SAM outlined 1,523 cells in about 20 seconds on an Apple silicon Mac, each measured by the app’s own code into a sortable table with CSV export.</p>
+          <p class="caption">Stained plant stem; clip shortened while the model ran. <a href="media/table.jpg">See the measurements table</a>.</p>
+        </article>
+        <article class="demo">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/motion.jpg" aria-label="Every moving spot tracked over four seconds in a sperm wet mount">
+              <source src="media/motion.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3>Measure motion</h3>
+          <p>Asked “How fast are they swimming?”, it tracked 527 moving spots over 4 seconds: 153 swimming, median 13 px/s, in pixels because no scale was set.</p>
+          <p class="caption">Asked earlier while the slide drifted, it said it could not measure, and why.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="features">
     <div class="wrap">
       <h2>How it works</h2>
       <ol class="steps">
@@ -101,76 +175,7 @@
     </div>
   </section>
 
-  <section class="section alt">
-    <div class="wrap">
-      <h2>Try it without a camera or key</h2>
-      <div class="row">
-        <figure class="frame">
-          <video class="loop" muted loop playsinline preload="none" poster="media/example.jpg" aria-label="The example walkthrough finding and measuring bright regions in an image of human cells">
-            <source src="media/example.mp4" type="video/mp4">
-          </video>
-        </figure>
-        <div class="text">
-          <p><strong>Try an example</strong> opens a microscope image of human cells, finds the bright regions with a basic local method (Otsu threshold) and opens their measurements.</p>
-          <p>It needs no account, API key, model download or camera. A bright region is not necessarily one cell; the example shows how results are kept, not biological accuracy.</p>
-          <p class="caption">Image: human mitosis, David Root, CC0, via scikit-image.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="wrap">
-      <h2>Examples</h2>
-      <p class="sub">Recorded in HookeUI on recordings from a real microscope.</p>
-
-      <div class="row">
-        <figure class="frame">
-          <video class="loop" muted loop playsinline preload="none" poster="media/follow.jpg" aria-label="A sperm cell clicked once, outlined and followed as it swims, with its path drawn">
-            <source src="media/follow.mp4" type="video/mp4">
-          </video>
-        </figure>
-        <div class="text">
-          <h3>Follow a moving object</h3>
-          <p>One click outlines the cell with EdgeTAM. The outline follows it and its path is drawn with its length. Without a calibrated scale, distances are in pixels.</p>
-          <p class="caption">Sperm wet mount. The name is a vision model’s best guess, marked “Probably” until confirmed.</p>
-        </div>
-      </div>
-
-      <div class="row">
-        <figure class="frame">
-          <video class="loop" muted loop playsinline preload="none" poster="media/cells.jpg" aria-label="Cellpose-SAM outlining every cell in a plant stem section">
-            <source src="media/cells.mp4" type="video/mp4">
-          </video>
-        </figure>
-        <div class="text">
-          <h3>Segment and measure every cell</h3>
-          <p>Cellpose-SAM outlined 1,523 cells in this view in about 20 seconds on an Apple silicon Mac. Each cell is measured by the app’s own code.</p>
-          <p class="caption">Stained plant stem section. Clip shortened while the model ran.</p>
-        </div>
-      </div>
-
-      <figure class="frame still">
-        <img src="media/table.jpg" alt="The Measurements table for the 1,523 cells: medians and middle halves, then one row per cell with area, perimeter, length, width, elongation, roundness, solidity, brightness and position" width="1030" height="560">
-      </figure>
-      <p class="caption">Their measurements, sortable, with Download CSV. Sizes are in pixels until an objective or calibration is set.</p>
-
-      <div class="row">
-        <figure class="frame">
-          <video class="loop" muted loop playsinline preload="none" poster="media/motion.jpg" aria-label="Every moving spot tracked over four seconds in a sperm wet mount">
-            <source src="media/motion.mp4" type="video/mp4">
-          </video>
-        </figure>
-        <div class="text">
-          <h3>Measure motion</h3>
-          <p>Asked “How fast are they swimming?”, the app tracked moving spots over 4 seconds: 527 tracked, 153 actively swimming, median net speed 13 px/s, in pixels because no scale was set.</p>
-          <p>Asked earlier while the slide was drifting, it said it could not measure and why.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section alt" id="models">
+  <section class="section" id="models">
     <div class="wrap">
       <h2>Models</h2>
       <p class="sub">HookeUI runs established models and tools. Each keeps its own licence, shown before it is turned on. Please cite the ones you use.</p>
@@ -221,27 +226,6 @@
     </div>
   </section>
 
-  <section class="section" id="open">
-    <div class="wrap">
-      <h2>Open source</h2>
-      <div class="grid three facts">
-        <div>
-          <h3>Licence</h3>
-          <p>Apache 2.0 for HookeUI’s own code, with a Developer Certificate of Origin sign-off. Being finalised for the first release.</p>
-        </div>
-        <div>
-          <h3>Provenance</h3>
-          <p>Each result records the model, version and settings that made it. Shared images list what made them.</p>
-        </div>
-        <div>
-          <h3>Contributing</h3>
-          <p>Models, examples, corrections and documentation. The forum opens with the first release.</p>
-        </div>
-      </div>
-      <p class="caption">HookeUI is developed with AI coding assistants. It is named after Robert Hooke, whose <cite>Micrographia</cite> (1665) recorded what he saw through his microscope.</p>
-    </div>
-  </section>
-
   <section class="section alt" id="install">
     <div class="wrap">
       <h2>Install</h2>
@@ -268,6 +252,8 @@ make start</code></pre>
       </div>
     </div>
   </section>
+
+
 
 </main>
 

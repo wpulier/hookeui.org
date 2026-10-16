@@ -34,7 +34,7 @@ a { color: var(--accent); text-underline-offset: 3px; }
 a:hover { color: var(--accent-hover); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
-.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.wrap { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
 @media (max-width: 640px) { .wrap { padding: 0 16px; } }
 
 h1, h2, h3, h4 { margin: 0; font-weight: 600; color: var(--text); }
@@ -73,7 +73,12 @@ nav a:hover { color: var(--text); }
 .button.primary:hover { background: var(--accent-hover); }
 .button:disabled { cursor: default; color: var(--quiet); background: var(--alt); border-color: var(--line); }
 .note { font-size: 14px; color: var(--quiet); margin-top: 12px; }
-.hero-media { margin-top: 48px; }
+
+.hero-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+.hero h1 { font-size: clamp(48px, 6vw, 76px); }
+.hero .tagline { font-size: clamp(21px, 2.1vw, 27px); }
+.hero .lede { font-size: 16px; }
+@media (max-width: 1000px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
 
 /* Media */
 figure { margin: 0; }
@@ -146,3 +151,9 @@ figure { margin: 0; }
 .steps li::before { content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--alt); border: 1px solid var(--line); font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
 .steps p { color: var(--muted); font-size: 15px; }
 @media (max-width: 760px) { .steps { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+.demos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 40px; }
+.demo .frame { margin-bottom: 18px; }
+.demo video { aspect-ratio: 16 / 10; object-fit: contain; }
+.demo p { color: var(--muted); font-size: 15px; }
+.demo p.caption { color: var(--quiet); font-size: 13.5px; margin-top: 8px; }
+@media (max-width: 760px) { .demos { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
