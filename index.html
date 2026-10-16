@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Hooke: open-source microscopy workspace for the Mac</title>
 <meta name="description" content="Hooke is an open-source platform for finding, turning on and running microscopy and bioimage-analysis models on the Mac, with no terminal.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#04050b">
 <meta property="og:title" content="Hooke">
-<meta property="og:description" content="Image analysis at the speed new models arrive.">
-<meta property="og:image" content="https://hookeui.org/media/hero.jpg">
+<meta property="og:description" content="Every researcher, with a staff of models.">
+<meta property="og:image" content="https://hookeui.org/media/og.jpg">
 <meta property="og:url" content="https://hookeui.org/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
+<noscript><style>.sky { background-image: url("media/hero-scene.jpg"); } @media (max-width: 999px) { .sky { background-image: none; } .sky-stage { background-image: url("media/hero-scene-phone.jpg"); } }</style></noscript>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
 </head>
 <body>
 
@@ -35,28 +37,25 @@
 </header>
 
 <main id="top">
-  <section class="hero">
-    <div class="wrap hero-grid">
+  <section class="hero sky" aria-labelledby="hero-title">
+    <div class="sky-stage">
+      <canvas aria-hidden="true"></canvas>
+      <ul class="sky-labels" aria-label="Some entries in Hooke’s catalog"></ul>
+    </div>
+    <div class="wrap hero-inner">
       <div class="hero-copy">
         <p class="status"><span class="dot" aria-hidden="true"></span>Preview. The first release is not out yet.</p>
-        <h1>Hooke</h1>
-        <p class="tagline">Image analysis at the speed new models arrive.</p>
-        <p class="lede">An open-source platform for finding, turning on and running the hundreds of models in microscopy and bioimage analysis, with new ones published every week. Run them on your camera, recordings or images, and compare them on the same specimen. No terminal, no broken environments.</p>
+        <h1 id="hero-title">Hooke</h1>
+        <p class="tagline">Every researcher, with a staff of models.</p>
+        <p class="lede">Hooke puts the hundreds of models, algorithms and Fiji functions in microscopy at your microscope, with new ones every week. They do the technical work on your camera, recordings and images. You decide what the experiment needs. Open source, on your Mac, with no terminal.</p>
         <div class="actions">
           <button class="button primary" type="button" disabled aria-describedby="dl-note">Download for Mac</button>
           <a class="button" href="#install">Install from source</a>
         </div>
         <p class="note" id="dl-note">Apple silicon only. The signed download will be available with the first release.</p>
       </div>
-      <div class="hero-visual">
-        <figure class="frame">
-          <video class="loop" muted loop playsinline preload="metadata" poster="media/hero.jpg" aria-label="One click outlines and names the pith of a stained plant stem; a question about the cells around it is answered in the chat">
-            <source src="media/hero.mp4" type="video/mp4">
-          </video>
-        </figure>
-        <p class="caption">A recording of a stained plant stem in Hooke. One click outlines the pith and names it; the chat answers a question about the view. Real time.</p>
-      </div>
     </div>
+    <p class="sky-caption">The sky is the 1,523 cells Cellpose-SAM found in a real stained plant stem, each in its stain’s colour. The names are entries in Hooke’s catalog.</p>
   </section>
 
   <section class="section alt" id="open">
@@ -104,6 +103,18 @@
     <div class="wrap">
       <h2>See it work</h2>
       <p class="sub">Recorded in Hooke on recordings from a real microscope.</p>
+      <article class="demo lead">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="none" poster="media/hero.jpg" aria-label="One click outlines and names the pith of a stained plant stem; a question about the cells around it is answered in the chat">
+            <source src="media/hero.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <div>
+          <h3>Click, and ask</h3>
+          <p>One click outlines the pith of a stained plant stem and names it as a best guess. A question about the cells around it is answered in the chat.</p>
+          <p class="caption">Real time, on a recording from a real microscope.</p>
+        </div>
+      </article>
       <div class="demos">
         <article class="demo">
           <figure class="frame">
@@ -263,5 +274,6 @@ make start</code></pre>
 </footer>
 
 <script src="site.js" defer></script>
+<script type="module" src="hero-scene.js"></script>
 </body>
 </html>

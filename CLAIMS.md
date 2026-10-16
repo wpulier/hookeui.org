@@ -45,7 +45,6 @@ shortened by cuts, and say so.
 | The Mac app will be signed and update itself | Go-live checklist "Build the release pipeline in CI", "Make the downloadable Mac app" (planned) |
 | Chat, voice and naming need a key; the example and local models don't | AGENTS.md "Keys"; `docs/first-experience.md` |
 | Not affiliated with Fiji or ImageJ | Statement of fact by the owner |
-| Tagline: an open-source workspace for microscopy on the Mac | README (Apple silicon Mac developer preview); licence plan D11 |
 | Basic local method uses an Otsu threshold | `docs/first-experience.md` "What the result means" |
 | Motion: 527 tracked, 153 actively swimming, median net 13 px/s, pixels because no scale | The app's own answer, recorded in `media/motion.mp4`'s session (2026-10-15 18:31) |
 | Source code on GitHub from the first release | Go-live checklist "Approve and publish" (not public yet) |
@@ -63,3 +62,8 @@ shortened by cuts, and say so.
 | In the catalog now: Cellpose-SAM, micro-sam, SAM 3.1, EdgeTAM, InstanSeg, Trackastra, DINOv3, BioCLIP 2; Bright objects, Spot measure, Spot shape, brainreg; Analyze Particles, Gaussian Blur, Subtract Background; Gemini, GPT, Claude, SAM 3.1 (cloud); Allen mouse brain atlas | Each a folder in `catalog/models/` with its `kind` and `runs` |
 | Fiji functions run headless in a pinned Fiji, each proven to match the same ImageJ macro | `catalog/models/fiji-*/model.toml` headers; ADR 0024; AGENTS.md "Fiji, its plugins and bindings" |
 | No analytics or cookies on this site | This repository: no script but `site.js`, no third-party requests |
+| Tagline: "Every researcher, with a staff of models"; "They do the technical work … You decide what the experiment needs" | The owner's framing (2026-10-15). It matches how the app works: models and the app's code measure and propose, only the user confirms a name and decides (AGENTS.md "Facts, not verdicts", "Only the user makes a name Confirmed") |
+| The hero's sky is the 1,523 cells Cellpose-SAM found in a real stained plant stem, each in its stain's colour | `media/sky.json`, made by `tools/build_sky.py` from the app's own saved result: evidence `e1`, "Cell outlines · Cellpose-SAM · 18:26", recorded 2026-10-15 in the clip session from `2026-10-04-stained-plant-stem-section-42s.mp4`. Each star is one cell's centroid; its colour is the stain in a ring around the cell's own outline; the faint nebula is that capture, shown only where it is stained; the cell outlines drawn with a constellation are Cellpose-SAM's own polygons |
+| The names in the sky are entries in Hooke's catalog, with what each does and where it runs | Each a folder in `catalog/models/` (Cellpose-SAM, Trackastra, Analyze Particles, micro-sam, EdgeTAM, Gemini, InstanSeg, SAM 3.1, Gaussian Blur, BioCLIP 2, Subtract Background, Claude, Bright objects). Which cells a name is drawn over is decoration, not that model's result; the caption says only that the names are catalog entries |
+| "You": a researcher at a microscope drawn as a constellation | An illustration, drawn for this site; not a depiction of the app's interface |
+| three.js r169, vendored | `vendor/three.module.min.js` and `vendor/addons/` from the npm package `three@0.169.0`, MIT (`vendor/three-LICENSE.txt`). Nothing on the page is fetched from another site |

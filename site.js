@@ -31,3 +31,18 @@
     });
   }
 })();
+
+// The bar is dark while the hero's sky is under it, light once the page below is.
+(function () {
+  var bar = document.querySelector('.top'), sky = document.querySelector('.sky');
+  if (!bar || !sky) return;
+  function check() { bar.classList.toggle('on-sky', sky.getBoundingClientRect().bottom > bar.offsetHeight); }
+  addEventListener('scroll', check, { passive: true }); addEventListener('resize', check); check();
+})();
+
+// Without WebGL 2 the sky can't be drawn, so the hero shows a still of it instead.
+(function () {
+  var sky = document.querySelector('.sky'), ok = false;
+  try { ok = !!document.createElement('canvas').getContext('webgl2'); } catch (e) {}
+  if (sky && !ok) sky.classList.add('still-bg');
+})();
