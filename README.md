@@ -10,6 +10,43 @@ this repository's `main` branch at https://hookeui.org.
   cells as Hooke drew them in *Micrographia* (Observation XVIII) seen through an eyepiece, one lit gold. Our own drawing,
   nothing traced; made by `brand/src/build_brand.py` in the app's repository, where `brand/README.md` lists every size.
 
+## Updating the site
+
+There is no build step: what is in `main` is the site. GitHub Pages publishes `main` to https://hookeui.org about a minute
+after each change.
+
+1. Get the code and make a branch:
+   ```bash
+   git clone https://github.com/wpulier/hookeui.org
+   cd hookeui.org
+   git switch -c my-change
+   ```
+2. Edit what you need:
+
+   | To change | Edit |
+   |---|---|
+   | Words and sections | `index.html` |
+   | How it looks | `style.css` |
+   | The plate, the catalog stars, the header | `site.js` |
+   | The hero's sky | `hero-scene.js` |
+   | Videos and pictures | `media/` |
+3. Look at it on your machine. It has to be served; opening `index.html` as a file won't draw the sky.
+   ```bash
+   python3 -m http.server 8000
+   ```
+   Then open http://localhost:8000.
+4. Give any new factual sentence a row in `CLAIMS.md` saying why it's true. A sentence with no evidence is cut.
+5. Push the branch and open a pull request into `main`:
+   ```bash
+   git push -u origin my-change
+   ```
+   No write access? Fork the repository on GitHub, push to your fork and open the pull request from there. When it's
+   merged, the site updates. Pages are cached for up to 10 minutes, so reload without the cache to see it.
+
+Don't change `CNAME`: it is what points hookeui.org at this site. The scripts in `tools/` rebuild the hero's data from the
+app's saved results. You only need them to change the sky, "You" or the plate; each
+names the Python packages it needs in its first lines.
+
 ## The hero's sky
 
 `hero-scene.js` draws the hero with three.js (vendored in `vendor/`, MIT). Every star is a cell Cellpose-SAM found in a real
