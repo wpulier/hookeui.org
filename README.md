@@ -6,6 +6,9 @@ this repository's `main` branch at https://hookeui.org.
 - `media/`: loops recorded in HookeUI on recordings from a real microscope; nothing is mocked up.
 - `CLAIMS.md`: every factual sentence on the page with the evidence for it. A sentence without evidence is cut.
 - `fonts/`: Inter (SIL Open Font License, `fonts/Inter-OFL.txt`).
+- `favicon.svg`, `favicon.ico`, `apple-touch-icon.png` and the link card `media/og.jpg` (1200 × 630): Hooke's mark, cork
+  cells as Hooke drew them in *Micrographia* (Observation XVIII) seen through an eyepiece, one lit gold. Our own drawing,
+  nothing traced; made by `brand/src/build_brand.py` in the app's repository, where `brand/README.md` lists every size.
 
 ## The hero's sky
 
