@@ -24,6 +24,8 @@ if (canvas && webgl()) start().catch((e) => console.warn('sky:', e));
 async function start() {
   // Everything the sky needs, fetched at once (index.html preloads it too), so it is there as soon as the page is.
   const [sky, youData, bg] = await Promise.all([fetch('media/sky.json').then((r) => r.json()), fetch('media/you.json').then((r) => r.json()), texture('media/sky-bg.jpg')]);
+  // The eyepiece's textures (the real capture and every cell's outline) arrive after the sky is up; the lens waits for them.
+  const lensTex = Promise.all([texture('media/sky-photo.jpg'), texture('media/sky-outlines.png')]);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setClearColor(0x04050b, 1);
   const scene = new THREE.Scene();
@@ -50,6 +52,16 @@ async function start() {
   scene.add(comets.mesh);
   const labels = figures.map((f) => label(f));
   labels.push(label(you, true));
+  // The lens is drawn after the glow and grain, in a scene of its own that turns with the sky, so the real tissue in it
+  // keeps its true colour.
+  const lens = eyepiece(u);
+  const lensScene = new THREE.Scene(), lensFrame = new THREE.Group();
+  lensFrame.matrixAutoUpdate = false;
+  lensFrame.add(lens.mesh); lensScene.add(lensFrame);
+  lensTex.then(([photo, lines]) => lens.ready(photo, lines)).catch(() => {});
+  const note = document.createElement('p');
+  note.className = 'sky-lens-note'; note.setAttribute('aria-hidden', 'true');
+  stage.appendChild(note);
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -111,7 +123,7 @@ async function start() {
     }
     if (t > 0.1 && active.filter((f) => f.state !== 'fade').length < want && t > nextSwap) { choose(t); nextSwap = t + (t < 3 ? 0.2 : 1.2); }
     if (t > 8 && hovered < 0 && t > nextSwap) {
-      const oldest = active.find((f) => f.state === 'draw' || f.state === 'on');
+      const oldest = active.find((f) => (f.state === 'draw' || f.state === 'on') && !f.summoned);
       if (oldest) retire(oldest, t);
       nextSwap = t + 5.5;
     }
@@ -122,12 +134,12 @@ async function start() {
       const age = t - f.t0;
       let line = 0, cells = 0, text = 0;
       if (f.state === 'draw' || f.state === 'on') {
-        const fast = f.t0 < 3 ? 0.5 : 1; // the first ones arrive at once; later ones take their time
+        const fast = f.t0 < 3 || f.quick ? 0.5 : 1; // the first ones and the ones you call arrive at once; later ones take their time
         line = ease(clamp(age / (2.6 * fast))); cells = ease(clamp((age - 1.6 * fast) / (1.6 * fast))); text = ease(clamp((age - 0.9 * fast) / (1.0 * fast)));
         if (age > 3.2 * fast) f.state = 'on';
       } else if (f.state === 'fade') {
         const k = 1 - ease(clamp(age / 2.2)); line = k; cells = k; text = k;
-        if (age > 2.3) { f.state = null; active.splice(i, 1); }
+        if (age > 2.3) { f.state = null; active.splice(i, 1); if (f.summoned) { dismiss(f); continue; } }
       }
       const lit = f.index === hovered ? 1 : 0; // (-2 is "You")
       f.lit += (lit - f.lit) * 0.12;
@@ -161,6 +173,119 @@ async function start() {
     herPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), you.group.getWorldPosition(hit));
     you.point(ray.ray.intersectPlane(herPlane, hit) ? hit : null);
   }
+  // The eyepiece: over the sky the pointer becomes a lens that shows the real stained tissue and every cell's outline
+  // under the stars, magnified, with how many cells it is over. A click (or a tap) on a cell calls a model to it.
+  const lensAt = { x: 0, y: 0, on: 0, want: 0, cells: 0, touchUntil: 0 };
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const planeLocal = new THREE.Vector3(), rayLocal = new THREE.Ray();
+  function skyPoint(clientX, clientY) {
+    const r = stage.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    rayLocal.copy(ray.ray).applyMatrix4(new THREE.Matrix4().copy(world.matrixWorld).invert());
+    const t = (lens.z - rayLocal.origin.z) / rayLocal.direction.z;
+    if (!(t > 0)) return null;
+    return planeLocal.copy(rayLocal.origin).addScaledVector(rayLocal.direction, t).clone();
+  }
+  function overSky(e) {
+    if (e.target.closest && e.target.closest('.hero-copy, .sky-label, a, button')) return null;
+    const p = skyPoint(e.clientX, e.clientY);
+    return p && Math.hypot(p.x, p.y) < 0.98 ? p : null;
+  }
+  hero.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    const p = overSky(e);
+    lensAt.want = p ? 1 : 0;
+    if (p) { const r = stage.getBoundingClientRect(); lensAt.x = e.clientX - r.left; lensAt.y = e.clientY - r.top; lens.centre(p); }
+    hero.classList.toggle('lens-on', !!p);
+    if (still) render(performance.now());
+  });
+  hero.addEventListener('pointerleave', () => { lensAt.want = 0; hero.classList.remove('lens-on'); if (still) render(performance.now()); });
+  hero.addEventListener('click', (e) => {
+    const p = overSky(e);
+    if (!p) return;
+    if (e.pointerType === 'touch' || matchMedia('(pointer: coarse)').matches) {
+      const r = stage.getBoundingClientRect(); lensAt.x = e.clientX - r.left; lensAt.y = e.clientY - r.top; lens.centre(p);
+      lensAt.touchUntil = clock + 2.4;
+    }
+    summon(p);
+    if (still) render(performance.now());
+  });
+  function placeLens(t) {
+    const want = Math.max(lensAt.want, t < lensAt.touchUntil ? 1 : 0) * (lens.loaded ? 1 : 0);
+    lensAt.on += (want - lensAt.on) * (still ? 1 : 0.18);
+    const dpr = renderer.getPixelRatio();
+    lens.set(lensAt.x * dpr, (view.h - lensAt.y) * dpr, Math.min(120, view.h * 0.16) * dpr, lensAt.on);
+    if (lensAt.on > 0.02 && (Math.round(t * 60) % 6 === 0 || still)) {
+      // The cells it is over: those whose stars fall inside the lens, before its magnification.
+      const R = Math.min(120, view.h * 0.16) / lens.zoom;
+      let n = 0;
+      for (const [x, y] of sky.stars) { v3.set(x, y, 0).applyMatrix4(world.matrixWorld).project(camera);
+        const sx = (v3.x * 0.5 + 0.5) * view.w, sy = (-v3.y * 0.5 + 0.5) * view.h;
+        if ((sx - lensAt.x) ** 2 + (sy - lensAt.y) ** 2 < R * R) n++; }
+      lensAt.cells = n;
+    }
+    const verb = coarse ? 'tap' : 'click';
+    note.textContent = `${lensAt.cells} ${lensAt.cells === 1 ? 'cell' : 'cells'}, outlined by Cellpose-SAM · ${verb} to call a model`;
+    note.style.opacity = String(lensAt.on);
+    const half = (note.offsetWidth || 300) / 2, nx = Math.max(half + 8, Math.min(view.w - half - 8, lensAt.x));
+    note.style.transform = `translate(${nx.toFixed(1)}px, ${(lensAt.y + Math.min(120, view.h * 0.16) + 14).toFixed(1)}px) translate(-50%, 0)`;
+  }
+
+  // Summoning: a constellation forms around the cell that was clicked, from the larger cells near it that belong to no
+  // other figure, joined by their spanning tree; it takes a catalog entry's name not already in the sky and sends a
+  // report to "You".
+  const summoned = [];
+  let nextSlot = sky.constellations.length;
+  function summon(p) {
+    const near = [];
+    sky.stars.forEach(([x, y, m], i) => { const d = Math.hypot(x - p.x, y - p.y); if (d < 0.16 && !memberOf.has(i)) near.push([i, d, m]); });
+    if (near.length < 4) return;
+    near.sort((a, b) => a[1] - b[1]);
+    const pick = [near[0][0]];
+    for (const [i] of near.slice(1).sort((a, b) => b[2] - a[2])) {
+      if (pick.every((j) => Math.hypot(sky.stars[i][0] - sky.stars[j][0], sky.stars[i][1] - sky.stars[j][1]) > 0.04)) pick.push(i);
+      if (pick.length === 7) break;
+    }
+    if (pick.length < 4) return;
+    const P = pick.map((i) => sky.stars[i]);
+    const inTree = [0], edges = [];
+    while (inTree.length < P.length) {
+      let best = null;
+      for (const a of inTree) for (let b = 0; b < P.length; b++) if (!inTree.includes(b)) {
+        const d = Math.hypot(P[a][0] - P[b][0], P[a][1] - P[b][1]);
+        if (!best || d < best[2]) best = [a, b, d];
+      }
+      edges.push([best[0], best[1]]); inTree.push(best[1]);
+    }
+    const shown = new Set(active.map((f) => f.name));
+    const pool = CATALOG.filter((c) => !shown.has(c[0]));
+    const [name, what, where] = pool[Math.floor(Math.random() * pool.length)] || CATALOG[0];
+    const slot = nextSlot; nextSlot = nextSlot + 1 > 31 ? sky.constellations.length : nextSlot + 1;
+    const old = summoned.find((f) => f.index === slot);
+    if (old) dismiss(old);
+    const c = { name, what, where, stars: pick, edges, outlines: [], label: [P.reduce((a, q) => a + q[0], 0) / P.length, Math.min(...P.map((q) => q[1])) - 0.045] };
+    const f = figure(c, slot, sky.stars, u);
+    f.quick = true; f.summoned = true; f.members = pick;
+    pick.forEach((i) => { memberOf.set(i, slot); stars.con[i] = slot; });
+    stars.mesh.geometry.attributes.aCon.needsUpdate = true;
+    world.add(f.group);
+    labels.push(label(f));
+    begin(f, clock);
+    summoned.push(f);
+    comets.launch(f, clock + 1.2);
+    while (summoned.filter((g) => g.state && g.state !== 'fade').length > 4) retire(summoned.find((g) => g.state && g.state !== 'fade'), clock);
+  }
+  function dismiss(f) {
+    world.remove(f.group);
+    stars.glow[f.index] = 0;
+    f.members.forEach((i) => { if (memberOf.get(i) === f.index) { memberOf.delete(i); stars.con[i] = -1; } });
+    stars.mesh.geometry.attributes.aCon.needsUpdate = true;
+    const k = labels.findIndex((l) => l.figure === f); if (k >= 0) { labels[k].el.remove(); labels.splice(k, 1); }
+    const j = summoned.indexOf(f); if (j >= 0) summoned.splice(j, 1);
+    const a = active.indexOf(f); if (a >= 0) active.splice(a, 1);
+  }
+
   function placeCamera(t) {
     pointer.x += (pointer.tx - pointer.x) * 0.04; pointer.y += (pointer.ty - pointer.y) * 0.04;
     const pull = still ? 1 : ease(clamp(t / 4));
@@ -179,6 +304,7 @@ async function start() {
     return { x: (v3.x * 0.5 + 0.5) * view.w, y: (-v3.y * 0.5 + 0.5) * view.h };
   }
   function placeLabels() {
+    const placed = [];
     for (const l of labels) {
       const f = l.figure;
       if (f.text < 0.01) { if (l.shown) { l.el.style.opacity = '0'; l.el.style.visibility = 'hidden'; l.shown = false; } continue; }
@@ -186,6 +312,10 @@ async function start() {
       if (!p) continue;
       l.el.style.visibility = 'visible'; l.shown = true;
       l.el.style.opacity = String(f.text);
+      // Step aside, down, from a name already placed close by.
+      const w = (l.w = l.w || l.el.offsetWidth || 90);
+      for (let k = 0; k < 4 && placed.some((q) => Math.abs(q.x - p.x) < (q.w + w) / 2 + 6 && Math.abs(q.y - p.y) < 22); k++) p.y += 22;
+      placed.push({ x: p.x, y: p.y, w });
       l.el.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) translate(-50%, -100%)`;
     }
   }
@@ -199,10 +329,15 @@ async function start() {
     finish.uniforms.time.value = t;
     placeCamera(t); schedule(t); animateFigures(t);
     pointAtHer();
+    placeLens(t);
     you.update(t, still, hovered === -2);
     comets.update(t, still, active, world, you);
     stars.mesh.material.uniforms.glow.value = stars.glow;
     composer.render();
+    if (lens.visible()) {
+      lensFrame.matrix.copy(world.matrixWorld); lensFrame.matrixWorldNeedsUpdate = true;
+      renderer.autoClear = false; renderer.render(lensScene, camera); renderer.autoClear = true;
+    }
     placeLabels();
   }
   function loop(now) { raf = 0; if (!visible || document.hidden) return; render(now); raf = requestAnimationFrame(loop); }
@@ -250,12 +385,12 @@ function points(list, u, spikes) {
   g.setAttribute('aGlow', new THREE.BufferAttribute(glowA, 1));
   g.setAttribute('aCon', new THREE.BufferAttribute(con, 1));
   g.setAttribute('aReveal', new THREE.BufferAttribute(reveal, 1));
-  const glow = new Array(16).fill(0);
+  const glow = new Array(32).fill(0);
   const m = new THREE.ShaderMaterial({
     uniforms: { time: u.time, intro: u.intro, px: u.px, glow: { value: glow }, spikes: { value: spikes ? 1 : 0 } },
     vertexShader: `
       attribute vec3 aColor; attribute float aSize, aPhase, aGlow, aCon, aReveal;
-      uniform float time, intro, px, glow[16];
+      uniform float time, intro, px, glow[32];
       varying vec3 vColor; varying float vI, vBig;
       void main() {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
@@ -283,7 +418,7 @@ function points(list, u, spikes) {
       }`,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
-  return { mesh: new THREE.Points(g, m), glow };
+  return { mesh: new THREE.Points(g, m), glow, con };
 }
 
 // A figure: its stars joined as a star atlas joins them (the tree the build script made), drawn like a pen spreading
@@ -332,7 +467,9 @@ function figure(c, index, starList, u) {
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
   const group = new THREE.Group();
-  group.add(new THREE.LineSegments(lg, lines), new THREE.LineSegments(cg, cells));
+  const a = new THREE.LineSegments(lg, lines), b = new THREE.LineSegments(cg, cells);
+  a.renderOrder = b.renderOrder = 1.6; // over the eyepiece's lens
+  group.add(a, b);
   const anchor = new THREE.Vector3(c.label[0], c.label[1], 0);
   const centre = P.reduce((a, p) => a.add(p), new THREE.Vector3()).multiplyScalar(1 / P.length);
   const colour = c.stars.reduce((a, s) => a.add(new THREE.Color(starList[s][3], starList[s][4], starList[s][5])), new THREE.Color(0, 0, 0)).multiplyScalar(1 / c.stars.length);
@@ -503,7 +640,7 @@ function observer(u, data) {
 // Reports coming back: now and then a light leaves one of the models' constellations and travels, in an arc, to the eye
 // of "You". Its tail fades; it arrives as gold.
 function cometField(u) {
-  const CAP = 3, TAIL = 34, n = CAP * TAIL;
+  const CAP = 4, TAIL = 34, n = CAP * TAIL;
   const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), a = new Float32Array(n), sz = new Float32Array(n);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -524,9 +661,12 @@ function cometField(u) {
   const live = [];
   let next = 4;
   const gold = new THREE.Color(1.0, 0.82, 0.55), from = new THREE.Vector3(), to = new THREE.Vector3(), c1 = new THREE.Vector3(), q = new THREE.Vector3(), tint = new THREE.Color();
+  const queued = [];
   return {
     mesh,
+    launch(f, at) { queued.push({ f, at }); },
     update(t, still, active, world, you) {
+      for (let q = queued.length - 1; q >= 0; q--) if (t >= queued[q].at && live.length < CAP) { live.push({ f: queued[q].f, t0: t, dur: 2.6, bend: (hash(t * 3.1) - 0.5) * 0.5 }); queued.splice(q, 1); }
       a.fill(0);
       if (still) { g.attributes.aA.needsUpdate = true; return; }
       if (t > next && live.length < CAP) {
@@ -558,6 +698,65 @@ function cometField(u) {
       }
       g.attributes.position.needsUpdate = true; g.attributes.aColor.needsUpdate = true; g.attributes.aA.needsUpdate = true; g.attributes.aS.needsUpdate = true;
     },
+  };
+}
+
+// Entries a click can call, from the catalog (each a folder in catalog/models/), with what each does and where it runs.
+const CATALOG = [
+  ['Cellpose-SAM', 'Outlines every cell', 'On your Mac'], ['micro-sam', 'Outlines cells, or the one you click', 'On your Mac'],
+  ['EdgeTAM', 'Outlines what you click and follows it', 'On your Mac'], ['SAM 2.1 tiny', 'Outlines what you click', 'On your Mac'],
+  ['SAM 3.1', 'Finds everything like your example', 'On your Mac or your key'], ['InstanSeg', 'Finds nuclei in brightfield images', 'On your Mac'],
+  ['Trackastra', 'Links the same cells between views', 'On your Mac'], ['Analyze Particles', 'Fiji: counts and measures particles', 'On your Mac'],
+  ['Gaussian Blur', 'Fiji: smooths an image', 'On your Mac'], ['Subtract Background', 'Fiji: evens out uneven light', 'On your Mac'],
+  ['Bright objects', 'Finds bright regions, no key or download', 'On your Mac'], ['Spot measure', 'Measures spots and their sizes', 'On your Mac'],
+  ['Spot shape', 'Measures how round each spot is', 'On your Mac'], ['brainreg', 'Registers a whole brain to an atlas', 'On your Mac'],
+  ['BioCLIP 2', 'Groups cells that look alike', 'On your Mac'], ['DINOv3', 'Finds what looks alike', 'On your Mac'],
+  ['DINOv2', 'Groups cells that look alike', 'On your Mac'], ['Molmo 2', 'Points at what your words are about', 'On your Mac'],
+  ['MedSigLIP', 'Ranks names for blood and Pap smear cells', 'On your Mac'], ['Swin2SR', 'Enlarges a picture', 'On your Mac'],
+  ['Gemini', 'Names what you point at and answers', 'Your key'], ['GPT', 'Answers, names and describes', 'Your key'],
+  ['Claude', 'Answers, explains and writes lessons', 'Your key'],
+];
+
+// The eyepiece: a lens drawn in the sky's own plane, so it turns with it. Inside, the real capture and Cellpose-SAM's
+// outline of every cell, magnified; around it a fine rim with ticks, like the sky's chart rim.
+function eyepiece(u) {
+  const blank = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); blank.needsUpdate = true;
+  const uni = { photo: { value: blank }, lines: { value: blank }, at: { value: new THREE.Vector2() }, radius: { value: 200 }, on: { value: 0 },
+    centreUv: { value: new THREE.Vector2(0.5, 0.5) }, zoom: { value: 1.7 }, time: u.time };
+  const m = new THREE.ShaderMaterial({
+    uniforms: uni,
+    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `
+      uniform sampler2D photo, lines; uniform vec2 at, centreUv; uniform float radius, on, zoom, time; varying vec2 vUv;
+      void main() {
+        if (on < 0.005) discard;
+        vec2 q = gl_FragCoord.xy - at; float d = length(q);
+        float inside = 1.0 - smoothstep(radius - 1.5, radius, d);
+        float rim = exp(-pow((d - radius - 0.5) / 1.1, 2.0));
+        float a = atan(q.y, q.x) / 6.2831853;
+        float tick = step(fract(a * 90.0 + 0.5), 0.12) * step(radius + 2.0, d) * step(d, radius + (fract(a * 18.0 + 0.5) < 0.04 ? 11.0 : 6.0));
+        if (inside + rim + tick < 0.01) discard;
+        vec2 uv = centreUv + (vUv - centreUv) / zoom;
+        vec3 c = texture2D(photo, uv).rgb;
+        float edge = texture2D(lines, uv).r;
+        float pulse = 0.75 + 0.25 * sin(time * 2.0);
+        c = mix(c, vec3(1.0, 0.88, 0.62), edge * 0.75 * pulse);
+        c *= 1.0 - 0.45 * smoothstep(radius * 0.55, radius, d);
+        vec3 ring = vec3(0.95, 0.9, 0.82);
+        vec3 col = c * inside + ring * (rim * 0.85 + tick * 0.6) * (1.0 - inside);
+        gl_FragColor = vec4(col, on * max(inside, (rim * 0.85 + tick * 0.6)));
+      }`,
+    transparent: true, depthWrite: false, depthTest: false,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(FRAME.w, FRAME.h), m);
+  const z = 0.02;
+  mesh.position.set(FRAME.cx, FRAME.cy, z); mesh.renderOrder = 1.5;
+  return {
+    mesh, z, zoom: 1.7, loaded: false,
+    ready(photo, lines) { uni.photo.value = photo; uni.lines.value = lines; this.loaded = true; },
+    centre(p) { uni.centreUv.value.set((p.x - (FRAME.cx - FRAME.w / 2)) / FRAME.w, (p.y - (FRAME.cy - FRAME.h / 2)) / FRAME.h); },
+    set(x, y, r, on) { uni.at.value.set(x, y); uni.radius.value = r; uni.on.value = on; },
+    visible() { return uni.on.value > 0.005; },
   };
 }
 

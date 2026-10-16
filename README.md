@@ -13,4 +13,4 @@ this repository's `main` branch at https://hookeui.org.
 stained plant stem (`media/sky.json`, made from the app's saved result by `tools/build_sky.py`); constellations carry catalog entries' names, and "You"
 is a researcher at her microscope made of stars, from a public-domain USDA photograph of Ruth Colvin Starrett
 (outlined with EdgeTAM by `tools/cut_figure.py`, turned into points by `tools/build_you.py`, `media/you.json`). Without WebGL 2 or script the hero shows a still of it
-(`media/hero-scene.jpg`, `media/hero-scene-phone.jpg`). `?skyt=12` starts the scene 12 seconds in, for checking.
+(`media/hero-scene.jpg`, `media/hero-scene-phone.jpg`). Over the sky the pointer is an eyepiece (the real capture, `media/sky-photo.jpg`, and Cellpose-SAM's outlines, `media/sky-outlines.png`), and a click calls a catalog entry as a new constellation. `?skyt=12` starts the scene 12 seconds in, for checking.

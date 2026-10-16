@@ -250,3 +250,8 @@ figure { margin: 0; }
   .dawn-inner { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .dawn { padding-top: 24px; }
 }
+
+/* The eyepiece over the sky: the lens is the cursor. */
+.sky.lens-on .sky-stage, .sky.lens-on .hero-inner { cursor: none; }
+.sky-lens-note { position: absolute; left: 0; top: 0; z-index: 3; margin: 0; pointer-events: none; white-space: nowrap;
+  font-size: 12.5px; color: rgba(243, 239, 231, 0.82); text-shadow: 0 0 12px rgba(4, 5, 11, 0.95); opacity: 0; transition: opacity 0.2s ease; }
