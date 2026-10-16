@@ -22,7 +22,8 @@ function webgl() {
 if (canvas && webgl()) start().catch((e) => console.warn('sky:', e));
 
 async function start() {
-  const sky = await (await fetch('media/sky.json')).json();
+  // Everything the sky needs, fetched at once (index.html preloads it too), so it is there as soon as the page is.
+  const [sky, youData, bg] = await Promise.all([fetch('media/sky.json').then((r) => r.json()), fetch('media/you.json').then((r) => r.json()), texture('media/sky-bg.jpg')]);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setClearColor(0x04050b, 1);
   const scene = new THREE.Scene();
@@ -32,18 +33,18 @@ async function start() {
   const u = { time: { value: 0 }, intro: { value: still ? 99 : 0 }, px: { value: 400 } };
 
   scene.add(backdrop());
-  world.add(nebula(await texture('media/sky-bg.jpg'), u));
+  world.add(nebula(bg, u));
   world.add(rim());
-  const dust = points(sky.dust.map(([x, y, r, g, b], i) => ({ x, y, z: -0.55 + hash(i * 3.1) * 0.5, size: 0.007 + hash(i) * 0.008, r, g, b, glow: 0.16, con: -1, reveal: 0.2 + hash(i * 1.7) * 2.6 })), u, false);
+  const dust = points(sky.dust.map(([x, y, r, g, b], i) => ({ x, y, z: -0.55 + hash(i * 3.1) * 0.5, size: 0.007 + hash(i) * 0.008, r, g, b, glow: 0.16, con: -1, reveal: hash(i * 1.7) * 0.4 })), u, false);
   world.add(dust.mesh);
   const memberOf = new Map();
   sky.constellations.forEach((c, k) => c.stars.forEach((s) => memberOf.set(s, k)));
-  const stars = points(sky.stars.map(([x, y, m, r, g, b], i) => ({ x, y, z: memberOf.has(i) ? 0 : -0.2 + hash(i * 5.3) * 0.4, size: 0.014 + m * 0.032, r, g, b, glow: 0.2 + Math.pow(m, 1.6) * 0.75, con: memberOf.has(i) ? memberOf.get(i) : -1, reveal: 0.4 + (1 - m) * 2.2 + hash(i) * 0.6 })), u, true);
+  const stars = points(sky.stars.map(([x, y, m, r, g, b], i) => ({ x, y, z: memberOf.has(i) ? 0 : -0.2 + hash(i * 5.3) * 0.4, size: 0.014 + m * 0.032, r, g, b, glow: 0.2 + Math.pow(m, 1.6) * 0.75, con: memberOf.has(i) ? memberOf.get(i) : -1, reveal: (1 - m) * 0.25 + hash(i) * 0.2 })), u, true);
   stars.mesh.renderOrder = 1;
   world.add(stars.mesh);
   const figures = sky.constellations.map((c, k) => figure(c, k, sky.stars, u));
   figures.forEach((f) => world.add(f.group));
-  const you = observer(u);
+  const you = observer(u, youData);
   scene.add(you.group);
   const comets = cometField(u);
   scene.add(comets.mesh);
@@ -75,8 +76,8 @@ async function start() {
     // The disc's centre sits about 62% across a wide hero, and in the middle of a phone's stage.
     view = { w, h, wide, dist, cx: wide ? -halfW * 0.25 : 0.06, cy: wide ? 0.13 : 0.16 };
     u.px.value = (h * dpr) / (2 * halfH) * (wide ? 1 : 1.15);
-    you.group.position.set(wide ? 0.16 : 0.08, wide ? -0.2 : -0.24, 0.08);
-    you.group.scale.setScalar(wide ? 1 : 0.92);
+    you.group.position.set(wide ? 0.2 : 0.08, wide ? -0.14 : -0.12, 0.08);
+    you.group.scale.setScalar(wide ? 0.9 : 0.85);
     you.group.updateMatrixWorld();
     if (!still) render(performance.now());
   }
@@ -89,7 +90,8 @@ async function start() {
     if (!p) return false;
     const minX = view.wide ? 0.47 : 0.06;
     const o = project(you.middle, you.group);
-    if (o && Math.hypot(p.x - o.x, p.y - o.y) < Math.max(170, view.h * 0.27)) return false;
+    // Nor may any of a figure's own stars fall on her.
+    if (o && [...(f.starsXY || []), f.anchor].some((q) => { const r = project(q); return r && Math.abs(r.x - o.x) < view.h * 0.27 && Math.abs(r.y - o.y) < view.h * 0.33; })) return false;
     return p.x > view.w * minX && p.x < view.w * 0.95 && p.y > view.h * 0.1 && p.y < view.h * 0.86;
   }
   function begin(f, at) { f.state = 'draw'; f.t0 = at; active.push(f); }
@@ -107,8 +109,8 @@ async function start() {
       if (!active.length) for (const f of figures) { if (active.length < want && eligible(f)) { begin(f, -99); } }
       return;
     }
-    if (t > 3.4 && active.filter((f) => f.state !== 'fade').length < want && t > nextSwap) { choose(t); nextSwap = t + (t < 8 ? 0.9 : 1.2); }
-    if (t > 11 && hovered < 0 && t > nextSwap) {
+    if (t > 0.1 && active.filter((f) => f.state !== 'fade').length < want && t > nextSwap) { choose(t); nextSwap = t + (t < 3 ? 0.2 : 1.2); }
+    if (t > 8 && hovered < 0 && t > nextSwap) {
       const oldest = active.find((f) => f.state === 'draw' || f.state === 'on');
       if (oldest) retire(oldest, t);
       nextSwap = t + 5.5;
@@ -120,8 +122,9 @@ async function start() {
       const age = t - f.t0;
       let line = 0, cells = 0, text = 0;
       if (f.state === 'draw' || f.state === 'on') {
-        line = ease(clamp(age / 2.6)); cells = ease(clamp((age - 1.6) / 1.6)); text = ease(clamp((age - 1.2) / 1.2));
-        if (age > 3.2) f.state = 'on';
+        const fast = f.t0 < 3 ? 0.5 : 1; // the first ones arrive at once; later ones take their time
+        line = ease(clamp(age / (2.6 * fast))); cells = ease(clamp((age - 1.6 * fast) / (1.6 * fast))); text = ease(clamp((age - 0.9 * fast) / (1.0 * fast)));
+        if (age > 3.2 * fast) f.state = 'on';
       } else if (f.state === 'fade') {
         const k = 1 - ease(clamp(age / 2.2)); line = k; cells = k; text = k;
         if (age > 2.3) { f.state = null; active.splice(i, 1); }
@@ -143,12 +146,25 @@ async function start() {
     hero.addEventListener('pointermove', (e) => {
       const r = hero.getBoundingClientRect();
       pointer.tx = (e.clientX - r.left) / r.width - 0.5; pointer.ty = (e.clientY - r.top) / r.height - 0.5;
+      pointer.cx = e.clientX; pointer.cy = e.clientY;
     });
+  }
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), herPlane = new THREE.Plane(), hit = new THREE.Vector3();
+  let pointerIn = false;
+  hero.addEventListener('pointerleave', () => { pointerIn = false; });
+  hero.addEventListener('pointermove', () => { pointerIn = true; });
+  function pointAtHer() {
+    if (!pointerIn || still) { you.point(null); return; }
+    const r = stage.getBoundingClientRect();
+    ndc.set(((pointer.cx - r.left) / r.width) * 2 - 1, -((pointer.cy - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    herPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), you.group.getWorldPosition(hit));
+    you.point(ray.ray.intersectPlane(herPlane, hit) ? hit : null);
   }
   function placeCamera(t) {
     pointer.x += (pointer.tx - pointer.x) * 0.04; pointer.y += (pointer.ty - pointer.y) * 0.04;
-    const pull = still ? 1 : ease(clamp(t / 7));
-    const d = view.dist * (0.8 + 0.2 * pull);
+    const pull = still ? 1 : ease(clamp(t / 4));
+    const d = view.dist * (0.95 + 0.05 * pull);
     const bx = still ? 0 : Math.sin(t * 0.11) * 0.012, by = still ? 0 : Math.cos(t * 0.09) * 0.01;
     camera.position.set(view.cx + bx + pointer.x * 0.05, view.cy + by - pointer.y * 0.04, d);
     camera.lookAt(view.cx + pointer.x * 0.02, view.cy, 0);
@@ -182,6 +198,7 @@ async function start() {
     u.time.value = t; u.intro.value = t;
     finish.uniforms.time.value = t;
     placeCamera(t); schedule(t); animateFigures(t);
+    pointAtHer();
     you.update(t, still, hovered === -2);
     comets.update(t, still, active, world, you);
     stars.mesh.material.uniforms.glow.value = stars.glow;
@@ -243,7 +260,7 @@ function points(list, u, spikes) {
       void main() {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         float fade = smoothstep(-0.69, -0.5, position.y) * smoothstep(0.99, 0.86, position.y) * smoothstep(1.0, 0.9, length(position.xy));
-        float come = smoothstep(aReveal, aReveal + 1.2, intro);
+        float come = smoothstep(aReveal, aReveal + 0.3, intro);
         float tw = 0.78 + 0.22 * sin(time * (0.5 + aPhase * 1.3) + aPhase * 40.0);
         float lit = aCon >= 0.0 ? glow[int(aCon)] : 0.0;
         vI = aGlow * tw * fade * come * (1.0 + lit * 1.6);
@@ -319,153 +336,166 @@ function figure(c, index, starList, u) {
   const anchor = new THREE.Vector3(c.label[0], c.label[1], 0);
   const centre = P.reduce((a, p) => a.add(p), new THREE.Vector3()).multiplyScalar(1 / P.length);
   const colour = c.stars.reduce((a, s) => a.add(new THREE.Color(starList[s][3], starList[s][4], starList[s][5])), new THREE.Color(0, 0, 0)).multiplyScalar(1 / c.stars.length);
-  return { centre, colour, index, name: c.name, what: c.what, where: c.where, group, lines, cells, anchor, state: null, t0: 0, lit: 0, text: 0 };
+  return { starsXY: P, centre, colour, index, name: c.name, what: c.what, where: c.where, group, lines, cells, anchor, state: null, t0: 0, lit: 0, text: 0 };
 }
 
-// "You": a researcher at their microscope, as a constellation of its own in warm gold. A pen of stardust traces the
-// figure as the sky comes out; stars sit at its joints, and the brightest is where the eye meets the eyepiece.
-const YOU = {
-  strokes: [
-    // head, from the eye over the crown, the bun, down the nape and the length of the back to the stool
-    'M400 160 C399 148 392 134 378 129 C366 125 354 130 349 140 C344 150 346 164 350 176 C336 188 316 206 306 228 C296 252 294 290 300 318',
-    'M343 133 C335 126 324 132 328 141 C331 148 341 147 345 140',
-    // the face, close to the eyepiece, the throat, the chest and the lap
-    'M400 160 L408 168 L402 172 C404 176 402 180 398 182 C397 186 392 189 385 190 C379 196 378 206 377 216 C375 240 366 270 356 304',
-    // the arm reaching for the focus knob
-    'M354 208 C356 230 360 248 364 262 C392 258 424 250 448 241 C453 239 457 236 459 232',
-    // the legs and the stool
-    'M302 318 C330 316 362 315 388 316 C389 340 384 362 380 384 L402 388',
-    'M268 322 L328 322 M296 322 L296 380 M276 392 L296 380 L318 392',
-    // the microscope: eyepiece to the eye, its body, the arm, the knob, the stage, the objective and the foot
-    'M414 151 L484 179 M410 160 L480 188 M411 148 L406 161',
-    'M482 172 L502 178 L496 200 L476 194 Z',
-    'M490 198 L486 222 M480 196 L476 220 M474 222 L492 224',
-    'M500 184 C530 196 542 244 522 282 M508 192 C530 206 534 244 516 280',
-    'M532 236 m-7 0 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0',
-    'M446 240 L524 240 M452 244 L518 244',
-    'M494 262 m-9 0 a9 4 0 1 0 18 0 a9 4 0 1 0 -18 0',
-    'M444 286 C450 274 516 272 532 286',
-    // the bench
-    'M362 288 L566 288',
-  ],
-  joints: [[378, 129, 0.45], [343, 136, 0.3], [350, 176, 0.5], [306, 228, 0.35], [364, 262, 0.55], [459, 232, 0.6], [300, 318, 0.5], [388, 316, 0.55], [380, 384, 0.45], [296, 380, 0.3], [492, 178, 0.55], [522, 282, 0.45], [446, 240, 0.4], [532, 236, 0.4], [484, 223, 0.35]],
-  eye: [409, 156],
-  middle: [417, 258], k: 0.0016,
-};
-function observer(u) {
-  const toLocal = (x, y) => new THREE.Vector3((x - YOU.middle[0]) * YOU.k, -(y - YOU.middle[1]) * YOU.k, 0);
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
-  document.body.appendChild(svg);
-  const polys = [];
-  let total = 0;
-  for (const d of YOU.strokes) {
-    for (const part of d.split(/(?=M)/)) {
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', part); svg.appendChild(path);
-      const len = path.getTotalLength(), n = Math.max(2, Math.ceil(len / 1.5));
-      const pts = [];
-      for (let i = 0; i <= n; i++) { const q = path.getPointAtLength((i / n) * len); pts.push(q.x, q.y); }
-      polys.push({ pts, start: total, len }); total += len;
-    }
+// "You": a researcher at her microscope, made of stars, from a real photograph (media/you.json, tools/build_you.py):
+// her outline, the photo's own edges and light as dust, and her own constellation of brighter stars at her landmarks.
+// She is alive: the dust drifts on a curl-noise field around where it belongs, light ripples out from where her eye
+// meets the eyepiece (the brightest star, which flares when a report arrives), a few motes lift off and are reborn,
+// and the dust parts softly around the pointer.
+const NOISE = `
+  vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+  vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+  vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
+  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+  float snoise(vec3 v) {
+    const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0); const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+    vec3 i = floor(v + dot(v, C.yyy)); vec3 x0 = v - i + dot(i, C.xxx);
+    vec3 g = step(x0.yzx, x0.xyz); vec3 l = 1.0 - g; vec3 i1 = min(g.xyz, l.zxy); vec3 i2 = max(g.xyz, l.zxy);
+    vec3 x1 = x0 - i1 + C.xxx; vec3 x2 = x0 - i2 + C.yyy; vec3 x3 = x0 - D.yyy;
+    i = mod289(i);
+    vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+    float n_ = 0.142857142857; vec3 ns = n_ * D.wyz - D.xzx;
+    vec4 j = p - 49.0 * floor(p * ns.z * ns.z); vec4 x_ = floor(j * ns.z); vec4 y_ = floor(j - 7.0 * x_);
+    vec4 x = x_ * ns.x + ns.yyyy; vec4 y = y_ * ns.x + ns.yyyy; vec4 h = 1.0 - abs(x) - abs(y);
+    vec4 b0 = vec4(x.xy, y.xy); vec4 b1 = vec4(x.zw, y.zw);
+    vec4 s0 = floor(b0) * 2.0 + 1.0; vec4 s1 = floor(b1) * 2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
+    vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+    vec3 p0 = vec3(a0.xy, h.x); vec3 p1 = vec3(a0.zw, h.y); vec3 p2 = vec3(a1.xy, h.z); vec3 p3 = vec3(a1.zw, h.w);
+    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+    vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0); m = m * m;
+    return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
   }
-  svg.remove();
-  const pos = [], tt = [], dpos = [], dt = [], dj = [];
-  for (const { pts, start, len } of polys) {
-    const n = pts.length / 2 - 1;
-    for (let i = 0; i < n; i++) {
-      const a = toLocal(pts[i * 2], pts[i * 2 + 1]), b = toLocal(pts[i * 2 + 2], pts[i * 2 + 3]);
-      pos.push(a.x, a.y, 0, b.x, b.y, 0);
-      tt.push((start + (i / n) * len) / total, (start + ((i + 1) / n) * len) / total);
-      if (i % 3 === 0) for (let k = 0; k < 1; k++) {
-        const j = (hash(dpos.length * 1.37) - 0.5) * 0.006, j2 = (hash(dpos.length * 2.11) - 0.5) * 0.006;
-        dpos.push(a.x + j, a.y + j2, (hash(dpos.length) - 0.5) * 0.04); dt.push((start + (i / n) * len) / total); dj.push(hash(dpos.length * 0.7));
-      }
-    }
-  }
-  const gold = new THREE.Color(1.0, 0.8, 0.5);
-  const lg = new THREE.BufferGeometry();
-  lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  lg.setAttribute('aT', new THREE.Float32BufferAttribute(tt, 1));
-  const lineM = new THREE.ShaderMaterial({
-    uniforms: { progress: { value: 0 }, alpha: { value: 0 }, gold: { value: gold } },
-    vertexShader: `attribute float aT; varying float vT; void main() { vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform float progress, alpha; uniform vec3 gold; varying float vT;
-      void main() { if (vT > progress) discard; float tip = exp(-(progress - vT) * 40.0) * step(progress, 0.999);
-        gl_FragColor = vec4(gold * alpha * (0.42 + tip * 2.0), 1.0); }`,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  });
-  const dg = new THREE.BufferGeometry();
-  dg.setAttribute('position', new THREE.Float32BufferAttribute(dpos, 3));
-  dg.setAttribute('aT', new THREE.Float32BufferAttribute(dt, 1));
-  dg.setAttribute('aJ', new THREE.Float32BufferAttribute(dj, 1));
-  const dustM = new THREE.ShaderMaterial({
-    uniforms: { progress: { value: 0 }, alpha: { value: 0 }, time: u.time, px: u.px, gold: { value: gold } },
-    vertexShader: `attribute float aT, aJ; uniform float progress, time, px; varying float vI;
-      void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        float drawn = step(aT, progress); float tip = exp(-max(0.0, progress - aT) * 30.0) * step(progress, 0.999);
-        vI = drawn * (0.16 + 0.16 * sin(time * (0.8 + aJ * 2.0) + aJ * 30.0) + tip * 2.2);
-        gl_PointSize = (0.005 + aJ * 0.005 + tip * 0.012) * px * (3.0 / -mv.z) * 1.4; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform float alpha; uniform vec3 gold; varying float vI;
-      void main() { float r = length(gl_PointCoord - 0.5) * 2.0; gl_FragColor = vec4(gold * vI * alpha * exp(-r * r * 5.0), 1.0); }`,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  });
-  // Joint stars, each lit when the pen reaches it; the eye's is the brightest and flares when a report arrives.
-  const jp = [], js = [], jt = [];
-  const nearestT = (x, y) => {
-    let best = 1e9, bt = 0;
-    for (const { pts, start, len } of polys) { const n = pts.length / 2 - 1; for (let i = 0; i <= n; i++) { const d = Math.hypot(pts[i * 2] - x, pts[i * 2 + 1] - y); if (d < best) { best = d; bt = (start + (i / n) * len) / total; } } }
-    return bt;
+  // The curl of a noise field: a flow that swirls without gathering or scattering, like smoke in still air.
+  vec2 curl(vec3 p) {
+    float e = 0.1;
+    float a = snoise(p + vec3(0.0, e, 0.0)), b = snoise(p - vec3(0.0, e, 0.0));
+    float c = snoise(p + vec3(e, 0.0, 0.0)), d = snoise(p - vec3(e, 0.0, 0.0));
+    return vec2(a - b, d - c) / (2.0 * e);
+  }`;
+function observer(u, data) {
+  const P = data.points;
+  const n = P.length + 1;
+  const pos = new Float32Array(n * 3), kind = new Float32Array(n), bright = new Float32Array(n), when = new Float32Array(n), seed = new Float32Array(n);
+  P.forEach(([x, y, k, b, t], i) => { pos.set([x, y, (hash(i * 0.37) - 0.5) * (k === 5 ? 0.01 : 0.06)], i * 3); kind[i] = k; bright[i] = b; when[i] = t; seed[i] = hash(i * 1.93); });
+  const eye = new THREE.Vector3(data.eye[0], data.eye[1], 0.02);
+  pos.set([eye.x, eye.y, eye.z], P.length * 3); kind[P.length] = 4; bright[P.length] = 1; when[P.length] = 0; seed[P.length] = 0.5;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aKind', new THREE.BufferAttribute(kind, 1));
+  g.setAttribute('aB', new THREE.BufferAttribute(bright, 1));
+  g.setAttribute('aT', new THREE.BufferAttribute(when, 1));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+  const uni = {
+    progress: { value: 0 }, alpha: { value: 0 }, time: u.time, px: u.px, flash: { value: 0 },
+    eye: { value: new THREE.Vector2(eye.x, eye.y) }, ripple: { value: -10 }, pointer: { value: new THREE.Vector3(9, 9, 0) }, still: { value: 0 },
   };
-  for (const [x, y, m] of YOU.joints) { const v = toLocal(x, y); jp.push(v.x, v.y, 0.01); js.push(m); jt.push(nearestT(x, y)); }
-  const eye = toLocal(...YOU.eye);
-  jp.push(eye.x, eye.y, 0.02); js.push(1.25); jt.push(nearestT(...YOU.eye));
-  const jg = new THREE.BufferGeometry();
-  jg.setAttribute('position', new THREE.Float32BufferAttribute(jp, 3));
-  jg.setAttribute('aM', new THREE.Float32BufferAttribute(js, 1));
-  jg.setAttribute('aT', new THREE.Float32BufferAttribute(jt, 1));
-  const jointM = new THREE.ShaderMaterial({
-    uniforms: { progress: { value: 0 }, alpha: { value: 0 }, time: u.time, px: u.px, flash: { value: 0 }, gold: { value: gold } },
-    vertexShader: `attribute float aM, aT; uniform float progress, time, px, flash; varying float vI, vM;
-      void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        float on = smoothstep(aT, aT + 0.04, progress); float isEye = step(1.0, aM);
-        vM = aM; vI = on * (0.8 + 0.2 * sin(time * 0.9 + aM * 17.0)) * (1.0 + isEye * flash * 1.6);
-        gl_PointSize = (0.022 + aM * 0.03) * (1.0 + isEye * flash * 0.5) * px * (3.0 / -mv.z) * 1.4; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform float alpha; uniform vec3 gold; varying float vI, vM;
-      void main() { vec2 d = gl_PointCoord - 0.5; float r = length(d) * 2.0;
-        float core = exp(-r * r * 80.0), halo = exp(-r * 7.0) * 0.5;
-        float ray = (exp(-abs(d.x) * 90.0) * exp(-abs(d.y) * 6.0) + exp(-abs(d.y) * 90.0) * exp(-abs(d.x) * 6.0)) * (0.3 + vM * 0.5);
-        vec3 c = gold * (halo + ray) + vec3(1.0, 0.95, 0.85) * core;
-        gl_FragColor = vec4(c * vI * alpha * (1.0 - smoothstep(0.85, 1.0, r)), 1.0); }`,
+  const m = new THREE.ShaderMaterial({
+    uniforms: uni,
+    vertexShader: NOISE + `
+      attribute float aKind, aB, aT, aSeed;
+      uniform float progress, time, px, flash, ripple, still; uniform vec2 eye; uniform vec3 pointer;
+      varying vec3 vC; varying float vI, vRay;
+      void main() {
+        vec3 p = position;
+        float dust = step(aKind, 2.5);
+        // Drift: the dust sways on a slow curl-noise field around where it belongs.
+        vec2 flow = curl(vec3(p.xy * 3.2, time * 0.045 + aSeed * 0.2));
+        p.xy += flow * mix(0.0016, 0.0045, step(0.5, aKind)) * dust * (1.0 - still);
+        // Motes: one grain in twenty-five lifts off on the flow, fades, and is reborn where it was.
+        float mote = step(0.96, aSeed) * dust * (1.0 - still);
+        float life = fract(time * (0.035 + aSeed * 0.03) + aSeed * 13.0);
+        p.xy += mote * (curl(vec3(p.xy * 2.0, time * 0.08 + 7.0)) * 0.05 + vec2(0.012, 0.09)) * life * life;
+        float moteA = mix(1.0, smoothstep(0.0, 0.08, life) * (1.0 - smoothstep(0.55, 1.0, life)), mote);
+        // The pointer: the dust parts softly around it and brightens.
+        vec2 dp = p.xy - pointer.xy; float near = (1.0 - smoothstep(0.0, 0.14, length(dp))) * pointer.z * dust;
+        p.xy += normalize(dp + 1e-5) * near * near * 0.035;
+        // Light from the eyepiece: a ripple outward whenever a report arrives, and a slow breath every few seconds.
+        float de = length(position.xy - eye);
+        float ring = exp(-pow((de - (time - ripple) * 0.38) / 0.035, 2.0)) * exp(-(time - ripple) * 0.9);
+        float breath = exp(-pow((de - fract(time / 9.0) * 1.3) / 0.06, 2.0)) * 0.35 * (1.0 - still);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        float on = smoothstep(aT, aT + 0.07, progress);
+        float tip = exp(-max(0.0, progress - aT) * 22.0) * step(progress, 1.15) * on;
+        float tw = 0.72 + 0.28 * sin(time * (0.6 + aSeed * 1.8) + aSeed * 50.0);
+        float isEye = step(3.5, aKind) * step(aKind, 4.5), con = step(4.5, aKind), big = step(2.5, aKind) * step(aKind, 3.5);
+        float size = aKind < 0.5 ? 0.0075 : aKind < 1.5 ? 0.006 : aKind < 2.5 ? 0.0058 : 0.024;
+        size = mix(size, 0.05, isEye) * (1.0 + isEye * flash * 0.6);
+        size = mix(size, 0.03 + 0.012 * sin(time * 0.7 + aSeed * 20.0), con);
+        float gain = aKind < 0.5 ? 0.55 : aKind < 1.5 ? 0.45 : aKind < 2.5 ? 0.5 : 0.85;
+        gain = mix(gain, 1.35 + flash * 1.8, isEye);
+        gain = mix(gain, 1.05, con);
+        float lift = 1.0 + (ring * 2.2 + breath + near * 1.6) * dust;
+        vI = on * moteA * (tw * gain * aB * lift + tip * 1.6);
+        vRay = big * 0.45 + isEye + con * 0.8;
+        vC = mix(vec3(0.95, 0.58, 0.26), vec3(1.0, 0.93, 0.78), clamp(aB * 1.1 + ring * 0.5, 0.0, 1.0));
+        gl_PointSize = size * (1.0 + tip * 0.8 + ring * 0.6 * dust) * px * (3.0 / -mv.z) * 1.4;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform float alpha; varying vec3 vC; varying float vI, vRay;
+      void main() {
+        vec2 d = gl_PointCoord - 0.5; float r = length(d) * 2.0;
+        float core = exp(-r * r * 30.0), halo = exp(-r * 6.0) * 0.4;
+        float ray = vRay * (exp(-abs(d.x) * 80.0) * exp(-abs(d.y) * 5.0) + exp(-abs(d.y) * 80.0) * exp(-abs(d.x) * 5.0)) * 0.8;
+        vec3 c = vC * (halo + ray + core * 0.8) + vec3(1.0, 0.96, 0.88) * core * 0.45 * vRay;
+        gl_FragColor = vec4(c * vI * alpha * (1.0 - smoothstep(0.86, 1.0, r)), 1.0);
+      }`,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
-  // A clearing in the sky behind the figure, so it reads.
-  const clearing = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.72), new THREE.ShaderMaterial({
+  const stars = new THREE.Points(g, m);
+  stars.renderOrder = 4;
+  // Her constellation's lines, drawn like a pen after the dust has come.
+  const F = data.figure, lp = [], lt = [];
+  F.lines.forEach(([a, b], i) => { const A = F.stars[a], B = F.stars[b]; lp.push(A[0], A[1], 0, B[0], B[1], 0); const t = i / F.lines.length; lt.push(t, t + 1 / F.lines.length); });
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
+  lg.setAttribute('aT', new THREE.Float32BufferAttribute(lt, 1));
+  const lineM = new THREE.ShaderMaterial({
+    uniforms: { draw: { value: 0 }, alpha: uni.alpha, time: u.time },
+    vertexShader: `attribute float aT; varying float vT; void main() { vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform float draw, alpha, time; varying float vT;
+      void main() { if (vT > draw) discard; float tip = exp(-(draw - vT) * 18.0) * step(draw, 0.999);
+        float shimmer = 0.85 + 0.15 * sin(time * 1.3 - vT * 12.0);
+        gl_FragColor = vec4(vec3(1.0, 0.86, 0.62) * alpha * (0.42 * shimmer + tip * 1.4), 1.0); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  const lines = new THREE.LineSegments(lg, lineM);
+  lines.renderOrder = 5;
+  // A clearing in the sky behind her, so she reads.
+  const clearing = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 1.05), new THREE.ShaderMaterial({
     uniforms: { alpha: { value: 0 } },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform float alpha; varying vec2 vUv; void main() { float d = length((vUv - 0.5) * vec2(1.0, 0.86)) * 2.0;
-      gl_FragColor = vec4(0.016, 0.02, 0.045, alpha * 0.6 * (1.0 - smoothstep(0.25, 1.0, d))); }`,
+    fragmentShader: `uniform float alpha; varying vec2 vUv; void main() { float d = length((vUv - 0.5) * vec2(1.0, 0.9)) * 2.0;
+      gl_FragColor = vec4(0.016, 0.02, 0.045, alpha * 0.66 * (1.0 - smoothstep(0.2, 1.0, d))); }`,
     transparent: true, depthWrite: false,
   }));
-  clearing.position.set(0.0, -0.02, -0.02);
+  clearing.position.set(0.02, 0.0, -0.02); clearing.renderOrder = 2;
   const group = new THREE.Group();
-  const lines = new THREE.LineSegments(lg, lineM), dust = new THREE.Points(dg, dustM), joints = new THREE.Points(jg, jointM);
-  clearing.renderOrder = 2; lines.renderOrder = 3; dust.renderOrder = 3; joints.renderOrder = 4;
-  group.add(clearing, lines, dust, joints);
-  let lit = 0;
+  group.add(clearing, stars, lines);
+  const top = P.reduce((a, p) => (p[1] > a[1] ? p : a), [0, -9]);
+  let lit = 0, near = 0;
+  const target = new THREE.Vector3();
   return {
-    group, eye, name: 'You', what: 'Deciding what the experiment needs', where: 'At the microscope',
-    anchor: toLocal(417, 414), middle: toLocal(417, 258), space: group, text: 0,
-    flash(v) { jointM.uniforms.flash.value = Math.max(jointM.uniforms.flash.value, v); },
+    group, eye, height: data.height, name: 'You', what: 'Deciding what the experiment needs', where: 'At the microscope',
+    anchor: new THREE.Vector3(top[0], top[1] + 0.035, 0), middle: new THREE.Vector3(0, 0, 0), space: group, text: 0,
+    flash(v, t) { uni.flash.value = Math.max(uni.flash.value, v); uni.ripple.value = t; },
+    // The pointer, as a point on her plane (null when it is away).
+    point(world) { if (world) { target.copy(world); group.worldToLocal(target); near = 1; } else near = 0; },
     update(t, still, hover) {
-      const pen = still ? 1 : clamp((t - 0.9) / 4.2);
-      const p = still ? 1 : 1 - Math.pow(1 - pen, 2.2);
+      const p = still ? 1.2 : ease(clamp(t / 1.5)) * 1.2;
       lit += ((hover ? 1 : 0) - lit) * 0.1;
-      const a = (still ? 1 : clamp((t - 0.7) / 0.6)) * (1 + lit * 0.35);
-      for (const m of [lineM, dustM, jointM]) { m.uniforms.progress.value = p; m.uniforms.alpha.value = a; }
-      clearing.material.uniforms.alpha.value = still ? 1 : clamp((t - 0.6) / 2);
-      jointM.uniforms.flash.value *= 0.94;
-      this.text = still ? 1 : ease(clamp((t - 4.4) / 1.2));
+      uni.progress.value = p;
+      uni.alpha.value = (still ? 1 : clamp(t / 0.25)) * (1 + lit * 0.3);
+      uni.still.value = still ? 1 : 0;
+      lineM.uniforms.draw.value = still ? 1 : ease(clamp((t - 0.6) / 1.4));
+      clearing.material.uniforms.alpha.value = still ? 1 : clamp(t / 0.5);
+      uni.flash.value *= 0.94;
+      const pt = uni.pointer.value;
+      pt.x += (target.x - pt.x) * 0.12; pt.y += (target.y - pt.y) * 0.12; pt.z += (near - pt.z) * 0.06;
+      this.text = still ? 1 : ease(clamp((t - 0.6) / 0.6));
     },
   };
 }
@@ -492,7 +522,7 @@ function cometField(u) {
   const mesh = new THREE.Points(g, m);
   mesh.frustumCulled = false; mesh.renderOrder = 5;
   const live = [];
-  let next = 9;
+  let next = 4;
   const gold = new THREE.Color(1.0, 0.82, 0.55), from = new THREE.Vector3(), to = new THREE.Vector3(), c1 = new THREE.Vector3(), q = new THREE.Vector3(), tint = new THREE.Color();
   return {
     mesh,
@@ -513,7 +543,7 @@ function cometField(u) {
         from.copy(c.f.centre).applyMatrix4(world.matrixWorld);
         to.copy(you.eye).applyMatrix4(you.group.matrixWorld);
         c1.copy(from).lerp(to, 0.5); c1.x += (to.y - from.y) * c.bend; c1.y -= (to.x - from.x) * c.bend; c1.z += 0.15;
-        if (prog >= 1 && !c.done) { c.done = true; you.flash(1); }
+        if (prog >= 1 && !c.done) { c.done = true; you.flash(1, t); }
         for (let j = 0; j < TAIL; j++) {
           const s = ease(clamp(prog - j * 0.011)), i = k * TAIL + j;
           if (prog - j * 0.011 <= 0 || (prog - j * 0.011) >= 1) continue;
@@ -546,7 +576,7 @@ function nebula(tex, u) {
         float sat = mx > 0.0 ? (mx - mn) / mx : 0.0;
         vec2 cp = vP + vec2(${FRAME.cx.toFixed(3)}, ${FRAME.cy.toFixed(3)});
         float disc = smoothstep(1.0, 0.82, length(cp)) * smoothstep(-0.69, -0.45, cp.y) * smoothstep(0.99, 0.8, cp.y);
-        float reveal = smoothstep(4.5, 7.0, intro) * (1.0 - 0.62 * smoothstep(7.5, 11.0, intro));
+        float reveal = smoothstep(0.0, 1.5, intro) * (1.0 - 0.62 * smoothstep(2.5, 6.0, intro));
         float a = (0.11 + 0.2 * reveal) * pow(sat, 1.3) * disc;
         gl_FragColor = vec4(c * a, 1.0);
       }`,

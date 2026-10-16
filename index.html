@@ -7,7 +7,7 @@
 <meta name="description" content="Hooke is an open-source platform for finding, turning on and running microscopy and bioimage-analysis models on the Mac, with no terminal.">
 <meta name="theme-color" content="#04050b">
 <meta property="og:title" content="Hooke">
-<meta property="og:description" content="Every researcher, with a staff of models.">
+<meta property="og:description" content="Every observer, with a staff of researchers and models, ready at the speed of technology.">
 <meta property="og:image" content="https://hookeui.org/media/og.jpg">
 <meta property="og:url" content="https://hookeui.org/">
 <meta name="twitter:card" content="summary_large_image">
@@ -15,6 +15,11 @@
 <link rel="preload" href="fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 <noscript><style>.sky { background-image: url("media/hero-scene.jpg"); } @media (max-width: 999px) { .sky { background-image: none; } .sky-stage { background-image: url("media/hero-scene-phone.jpg"); } }</style></noscript>
+<link rel="modulepreload" href="vendor/three.module.min.js">
+<link rel="modulepreload" href="hero-scene.js">
+<link rel="preload" href="media/sky.json" as="fetch" crossorigin>
+<link rel="preload" href="media/you.json" as="fetch" crossorigin>
+<link rel="preload" href="media/sky-bg.jpg" as="image" crossorigin>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
 </head>
 <body>
@@ -46,8 +51,8 @@
       <div class="hero-copy">
         <p class="status"><span class="dot" aria-hidden="true"></span>Preview. The first release is not out yet.</p>
         <h1 id="hero-title">Hooke</h1>
-        <p class="tagline">Every researcher, with a staff of models.</p>
-        <p class="lede">Hooke puts the hundreds of models, algorithms and Fiji functions in microscopy at your microscope, with new ones every week. They do the technical work on your camera, recordings and images. You decide what the experiment needs. Open source, on your Mac, with no terminal.</p>
+        <p class="tagline">Every observer, with a staff of researchers and models, ready at the speed of technology.</p>
+        <p class="lede">Open source, for the community. To discover new worlds hidden in the existing.</p>
         <div class="actions">
           <button class="button primary" type="button" disabled aria-describedby="dl-note">Download for Mac</button>
           <a class="button" href="#install">Install from source</a>
@@ -55,27 +60,48 @@
         <p class="note" id="dl-note">Apple silicon only. The signed download will be available with the first release.</p>
       </div>
     </div>
-    <p class="sky-caption">The sky is the 1,523 cells Cellpose-SAM found in a real stained plant stem, each in its stain’s colour. The names are entries in Hooke’s catalog.</p>
+    <p class="sky-caption">The sky is the 1,523 cells Cellpose-SAM found in a real stained plant stem, each in its stain’s colour. The names are entries in Hooke’s catalog. “You” is made from a USDA photograph of Ruth Colvin Starrett, a cytologist who studied plant cells (Smithsonian Institution Archives).</p>
+  </section>
+
+  <section class="dawn" aria-labelledby="dawn-title">
+    <div class="wrap dawn-inner">
+      <h2 id="dawn-title">Every week, someone teaches a model to see something new.</h2>
+      <ol class="beats">
+        <li>
+          <h3>It’s a click from your microscope.</h3>
+          <p>Find it in the catalog or paste its link. Download it, add a key or turn it on: no terminal, nothing to break.</p>
+        </li>
+        <li>
+          <h3>It works while you watch.</h3>
+          <p>Outline, measure and follow on your live camera, recordings and images, with the model named on every step.</p>
+        </li>
+        <li>
+          <h3>You decide what it means.</h3>
+          <p>The app measures, the models propose, and only you confirm. Then share it back, so the next observer starts where you left off.</p>
+        </li>
+      </ol>
+    </div>
   </section>
 
   <section class="section alt" id="open">
     <div class="wrap">
-      <h2>Open source</h2>
+      <h2>Open source, for the community</h2>
+      <p class="sub">No single lab can keep up with every new model. Together, we can. Hooke is free, its code is open, and anything anyone adds can be shared with everyone.</p>
       <div class="grid three facts">
         <div>
-          <h3>Licence</h3>
+          <h3>Free to use, free to change</h3>
           <p>Apache 2.0 for HookeUI’s own code, with a Developer Certificate of Origin sign-off. Being finalised for the first release.</p>
         </div>
         <div>
-          <h3>Provenance</h3>
-          <p>Each result records the model, version and settings that made it. Shared images list what made them.</p>
+          <h3>Results anyone can repeat</h3>
+          <p>Every result records the model, version and settings that made it, and a shared image names them, so anyone can turn on the same ones and run it again.</p>
         </div>
         <div>
-          <h3>Contributing</h3>
-          <p>Models, examples, corrections and documentation. The forum opens with the first release.</p>
+          <h3>Built by the people who use it</h3>
+          <p>Add a model, an example, a fix. Share it as a file, or publish it to the reviewed catalog for everyone. The forum opens with the first release.</p>
         </div>
       </div>
-      <p class="caption">HookeUI is developed with AI coding assistants. It is named after Robert Hooke, whose <cite>Micrographia</cite> (1665) recorded what he saw through his microscope.</p>
+      <p class="caption">HookeUI is developed with AI coding assistants. It is named after Robert Hooke, whose <cite>Micrographia</cite> (1665) recorded what he saw through his microscope, and gave us the word “cell”.</p>
     </div>
   </section>
 

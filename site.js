@@ -32,11 +32,15 @@
   }
 })();
 
-// The bar is dark while the hero's sky is under it, light once the page below is.
+// The bar is dark while the hero's night is under it, light once the page below is.
 (function () {
-  var bar = document.querySelector('.top'), sky = document.querySelector('.sky');
+  var bar = document.querySelector('.top'), sky = document.querySelector('.sky'), dawn = document.querySelector('.dawn');
   if (!bar || !sky) return;
-  function check() { bar.classList.toggle('on-sky', sky.getBoundingClientRect().bottom > bar.offsetHeight); }
+  function check() {
+    // Dark while the sky, or the dark part of the dawn below it, is under the bar.
+    var under = dawn ? dawn.getBoundingClientRect().top + dawn.offsetHeight * 0.62 : sky.getBoundingClientRect().bottom;
+    bar.classList.toggle('on-sky', under > bar.offsetHeight);
+  }
   addEventListener('scroll', check, { passive: true }); addEventListener('resize', check); check();
 })();
 

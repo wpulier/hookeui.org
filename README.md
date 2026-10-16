@@ -11,5 +11,6 @@ this repository's `main` branch at https://hookeui.org.
 
 `hero-scene.js` draws the hero with three.js (vendored in `vendor/`, MIT). Every star is a cell Cellpose-SAM found in a real
 stained plant stem (`media/sky.json`, made from the app's saved result by `tools/build_sky.py`); constellations carry catalog entries' names, and "You"
-is a researcher at a microscope drawn as one. Without WebGL 2 or script the hero shows a still of it
+is a researcher at her microscope made of stars, from a public-domain USDA photograph of Ruth Colvin Starrett
+(outlined with EdgeTAM by `tools/cut_figure.py`, turned into points by `tools/build_you.py`, `media/you.json`). Without WebGL 2 or script the hero shows a still of it
 (`media/hero-scene.jpg`, `media/hero-scene-phone.jpg`). `?skyt=12` starts the scene 12 seconds in, for checking.
