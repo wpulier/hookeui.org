@@ -7,18 +7,18 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <description>Updates to HookeUI</description>
     <language>en</language>
     <item>
-      <title>HookeUI 0.1.1</title>
-      <pubDate>Mon, 19 Oct 2026 19:25:54 GMT</pubDate>
-      <sparkle:version>3259</sparkle:version>
+      <title>HookeUI 0.1.2</title>
+      <pubDate>Mon, 19 Oct 2026 21:14:29 GMT</pubDate>
+      <sparkle:version>3269</sparkle:version>
       <!-- Existing releases allowed silent installation. Require an interactive offer for every older build. -->
-      <sparkle:minimumAutoupdateVersion>3259</sparkle:minimumAutoupdateVersion>
-      <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+      <sparkle:minimumAutoupdateVersion>3269</sparkle:minimumAutoupdateVersion>
+      <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <description><![CDATA[<h3>Hooke 0.1.1</h3><ul><li>Automatic update checks, with you in control of downloading and restarting.</li><li>Existing beta installations can now update through HookeUI → Check for Updates….</li><li>Saved Projects and scientific resources stay in your data folder when the app updates.</li></ul><p>Save drafts and finish or stop active work before choosing Install and Relaunch. You can defer an update and keep working.</p><h3>Current limitations</h3><p>This release connects updates to the October 19 scientific-workflow milestone. It does not complete the full napari parity or independent qualification program. The complete packaged scientific chain remains unqualified. Two recorded click-latency failures and the optional SAM 3.1 and Molmo preparation failures remain open. See the workflow guide and known issues on hookeui.org.</p>]]></description>
-      <enclosure url="https://github.com/wpulier/hookeui.org/releases/download/v0.1.1/HookeUI-0.1.1.dmg" length="43981655" type="application/octet-stream" sparkle:edSignature="qQaDozDL9JwZLd1CwVITZa+NfoUGqML/jlP8HKlxRMAeATK1vbSxsDBa3Za6zFC0XQalGwmvosvzfqAtOfy4CQ=="></enclosure>
+      <description><![CDATA[<p>Hooke 0.1.2</p><ul><li>Available updates appear as a quiet Update control beside Settings. Review the release when you are ready.</li><li>Settings includes your installed version and Check for updates.</li><li>Update restart asks separately and defaults to Keep Working. Pending or conflicted Project notes and arrangements block restart.</li><li>Saved Projects and scientific data remain outside the app. Restarting stops active work; unsaved tool edits, console variables and unsent messages may be lost. Save tool changes and finish or stop work first. Jobs and private tool sessions do not automatically resume.</li></ul><p>Known limits</p><p>The full scientific workflow, independent package qualification and cross-platform qualification remain open. These update safeguards do not establish automatic saving of every plugin&#x27;s state or resumability of every operation. See the release checks for exact tested behavior.</p>]]></description>
+      <enclosure url="https://github.com/wpulier/hookeui.org/releases/download/v0.1.2/HookeUI-0.1.2.dmg" length="44048616" type="application/octet-stream" sparkle:edSignature="JW4SNy/icHQIZsUN5rdfJxdUPsGzIsjxjjAXSNeVL8sBZdzb7+r9lmkruGxVqD4zYV9yS/P+DYgRZhJrgLwZDQ=="></enclosure>
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: lNFuintk/yAs0yrtaLHrpovDYImKE4cHGunK+OJiuOYNppYxMw3G+s0XCPPOxEX8ia8JuzMAoaWR9517rl38Dg==
-length: 2217
+edSignature: A6D6mX8JxtT4+wADQH0LWe1BL9ZcmV1Vjk76oB+3RyOxu+rkVTjH2EpfMPzJL+gTb+BBobxXGvufbosxLOWjAw==
+length: 2307
 -->
