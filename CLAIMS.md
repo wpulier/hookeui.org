@@ -84,3 +84,14 @@ shortened by cuts, and say so.
 | Gaussian Blur smooths an image; Subtract Background removes an uneven background; Spot measure finds spots and their sizes; Spot shape says how round each spot is | The Fiji commands' documented purposes (`catalog/models/fiji-*/model.toml`); `spot-measure`, `spot-shape` entries (SciPy ndimage) |
 | "The sky keeps filling": entries arrive as catalog updates with no new app; add your own from a link, a Cellpose model or an AI-drafted adapter tried in a sandbox | The rows "New entries reach you as catalog updates", "Add a model from a BioImage Model Zoo or Hugging Face link", "Have an AI assistant draft the adapter" |
 | "Come and look": the signed Mac app arrives with the first release; build from source on Apple silicon; the example and local models need no key | The rows "The Mac app will be signed", "Runs on Macs with Apple silicon", "Chat, voice and naming need a key" |
+
+
+## 19 October 2026 development beta
+
+The new Download Mac beta entry leads to beta.html, which explicitly limits the
+claim to an early integrated development preview. The exact signed/notarized
+artifact, SHA256 and source revision are recorded in the beta release assets.
+Full workflow, independent qualification and napari parity are explicitly open.
+Scientific packages are separate assets; their manifests declare requirements
+and licenses. Source-only continuation is retained in the private application
+repository milestone handoff. No general update feed is replaced.
