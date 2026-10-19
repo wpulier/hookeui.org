@@ -101,3 +101,11 @@ repository milestone handoff. No general update feed is replaced.
 - Download uses the normal Hooke name and version 0.1.1; historical prerelease remains available. Removing the label does not assert complete scientific-workflow qualification. `download.html` retains specific limits.
 - Automatic checks, explicit installation and restart: Sparkle configuration and signed appcast in source commit `8ece3a66`; the appcast requires an interactive offer for older clients. The original beta feed is bridged at `beta/appcast.xml`.
 - Signed and notarized Apple Silicon artifact, Project preservation and update delivery: source milestone handoff records the real beta → 0.1.1 Sparkle update in macOS 26.6.2: Remind Me Later, separate Install and Relaunch, 225 scientific files byte-identical, 27 saved documents readable, corrected uint16 label 7 inspected after reopen. DMG SHA256 `4baffde96ca02fcebd0c27f92e1a032c854cf8d4c95fab185306806b7f8871df`. This is one update demonstration, not every migration or complete workflow qualification.
+
+
+## 19 October 2026 — Hooke 0.1.2 update notice
+
+- Update reminder and Settings entry: native Sparkle bridge and Studio app-updates module in application source `41e8eff1`. Reminder mechanism and Settings controls exercised in isolated macOS VM.
+- Keep Working, save blockers and restart consequences: native restart admission and WorkspaceViews checks; focused synthetic regressions cover unsaved notes/layouts across Projects. Native outgoing update exercised refusal/deferral/later confirmation. Arbitrary unsaved tool state is explicitly not promised preservation.
+- Exact signed/notarized artifact: 0.1.2 build 3269, SHA256 `5b3ef0e99d42849cf6f229f19989c173e553d8630b7dee6d58aa8129bfb29457`. Real installed 0.1.1 updated through Sparkle from a separately signed private feed; all 225 scientific-storage files unchanged, 27 documents readable and corrected uint16 label 7 reopened. Final native Settings shows installed 0.1.2.
+- Current failed checks and qualification limits: source `docs/handoff/2026-10-19-beta-milestone.md` and `services/sim/results/latest.json`. Backend 9,952 passed / 138 skipped / 1 failed; isolated diagnostic file 16 passed. Studio 2,286 tests passed. Simulation 28/36 with teardown passing, concurrent packaging/VM load disclosed. No thresholds changed.
