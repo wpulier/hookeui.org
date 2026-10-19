@@ -95,3 +95,9 @@ Full workflow, independent qualification and napari parity are explicitly open.
 Scientific packages are separate assets; their manifests declare requirements
 and licenses. Source-only continuation is retained in the private application
 repository milestone handoff. No general update feed is replaced.
+
+## 19 October 2026 — Hooke 0.1.1 updates
+
+- Download uses the normal Hooke name and version 0.1.1; historical prerelease remains available. Removing the label does not assert complete scientific-workflow qualification. `download.html` retains specific limits.
+- Automatic checks, explicit installation and restart: Sparkle configuration and signed appcast in source commit `8ece3a66`; the appcast requires an interactive offer for older clients. The original beta feed is bridged at `beta/appcast.xml`.
+- Signed and notarized Apple Silicon artifact, Project preservation and update delivery: source milestone handoff records the real beta → 0.1.1 Sparkle update in macOS 26.6.2: Remind Me Later, separate Install and Relaunch, 225 scientific files byte-identical, 27 saved documents readable, corrected uint16 label 7 inspected after reopen. DMG SHA256 `4baffde96ca02fcebd0c27f92e1a032c854cf8d4c95fab185306806b7f8871df`. This is one update demonstration, not every migration or complete workflow qualification.
