@@ -54,12 +54,13 @@
       <div class="hero-copy">
         <h1 id="hero-title">Hooke</h1>
         <p class="tagline">Every observer, with a staff of researchers and models, ready at the speed of technology.</p>
+        <p class="lede">A microscopy workspace for the Mac: open your microscope images and recordings, outline and measure what is in them with models that run on your Mac, and keep each result with the model and settings that made it.</p>
         <p class="lede">Open source, for the community. To discover new worlds hidden in the existing.</p>
         <div class="actions">
           <a class="button primary" href="download.html" aria-describedby="dl-note">Download for Mac</a>
-          <a class="button" href="#install">Install from source</a>
+          <a class="button" href="download.html#limits">Current limits</a>
         </div>
-        <p class="note" id="dl-note">For Apple Silicon Macs. See installation guidance, updates and current workflow limits.</p>
+        <p class="note" id="dl-note">Free, for Macs with Apple silicon and macOS 14 or later. Trying the bundled example needs no account, key or camera.</p>
       </div>
     </div>
     <p class="sky-caption">The sky is the 1,523 cells Cellpose-SAM found in a real stained plant stem, each in its stain’s colour. The names are entries in Hooke’s catalog. “You” is made from a USDA photograph of Ruth Colvin Starrett, a cytologist who studied plant cells (Smithsonian Institution Archives).</p>
@@ -177,7 +178,7 @@
             </video>
           </figure>
           <h3><span class="obs-n">Observation 5.</span> Of human cells, with nothing to set up</h3>
-          <p><strong>Try an example</strong> opens a real microscope image, finds its bright regions and measures them. No account, key, download or camera.</p>
+          <p>The bundled example opens a real microscope image, finds its bright regions and measures them. No account, key, download or camera.</p>
           <p class="caption">Human mitosis by David Root, CC0, via scikit-image. A bright region isn’t necessarily one cell.</p>
         </article>
       </div>
@@ -252,16 +253,18 @@
     <div class="wrap install-grid">
       <div>
         <h2 id="install-title">Come and look.</h2>
-        <p class="say">The signed Mac app arrives with the first release. Until then, you can build it from source on a Mac with Apple silicon.</p>
+        <p class="say">Hooke is a signed Mac app for Apple silicon. Install it with Finder; no terminal or developer tools.</p>
         <p class="small">The example and the local models need no key. Chat, voice and naming use a cloud provider, with your own key.</p>
       </div>
-      <div class="code">
-        <button class="copy-btn" type="button" data-copy="install-cmds">Copy</button>
-        <pre><code id="install-cmds">git clone https://github.com/wpulier/HookeUI
-cd HookeUI
-make setup
-make start</code></pre>
-        <p class="caption">The repository is published with the first release.</p>
+      <div>
+        <ol class="steps">
+          <li>Download Hooke and open the disk image.</li>
+          <li>Drag HookeUI into Applications, then open it there.</li>
+          <li>Its first launch prepares the app’s Python and packages (about 350 MB, a few minutes), step by step on screen.</li>
+          <li>Open the bundled example: a real microscope image, its bright regions found and measured on your Mac.</li>
+        </ol>
+        <div class="actions"><a class="button primary" href="download.html">Download for Mac</a></div>
+        <p class="caption">Installation details and current limits are on the download page. The source code is published on GitHub with the first public release.</p>
       </div>
     </div>
   </section>
