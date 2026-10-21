@@ -9,7 +9,7 @@ shortened by cuts, and say so.
 | Claim on the page | Evidence |
 |---|---|
 | Free and open source; planned licence Apache-2.0 with DCO, being finalised | Go-live checklist D11 (drafted, not applied); `docs/contributing/DCO.txt`; README "Licence" |
-| Runs on Macs with Apple silicon; the download is coming soon | README "Run the studio" requirements; go-live checklist "Make the downloadable Mac app" (not built yet) |
+| Free, for Macs with Apple silicon and macOS 14 or later | The 0.1.2 DMG's app is arm64 only with `LSMinimumSystemVersion` 14.0 (read from the released `HookeUI-0.1.2.dmg`, SHA256 `5b3ef0e9…9457`, 2026-10-19) |
 | Point a camera at the eyepiece or open recordings and images | AGENTS.md "Three live sources"; ADR 0022 (assets as session sources); the hero, follow and motion clips open recordings as assets |
 | Outline, measure and follow with models the community uses | Catalog entries `catalog/models/{edgetam,cellpose-sam,micro-sam-lm,trackastra,...}`; clips |
 | See which model did each step | AGENTS.md "Activity" (`ToolRun.models`, each step's models) |
@@ -42,12 +42,12 @@ shortened by cuts, and say so.
 | Forum opens with the first release | Go-live checklist decision 08 (not chosen yet) |
 | Built with a lot of help from AI coding assistants | Go-live checklist D2 ("AI help said plainly") |
 | Named after Robert Hooke, whose Micrographia (1665) recorded what he saw through his microscope | Historical record (Hooke, *Micrographia*, Royal Society, 1665) |
-| The Mac app will be signed and update itself | Go-live checklist "Build the release pipeline in CI", "Make the downloadable Mac app" (planned) |
+| A signed Mac app; installed with Finder, no terminal or developer tools | 0.1.2 DMG: `spctl` accepts it as "Notarized Developer ID" and its ticket is stapled; installed by dragging to Applications and opened on a clean macOS 26.6.2 VM with no developer tools (L7a, ticket 62, 2026-10-19). Sparkle updates: `packaging/macos/README.md` |
 | Chat, voice and naming need a key; the example and local models don't | AGENTS.md "Keys"; `docs/first-experience.md` |
 | Not affiliated with Fiji or ImageJ | Statement of fact by the owner |
 | Basic local method uses an Otsu threshold | `docs/first-experience.md` "What the result means" |
 | Motion: 527 tracked, 153 actively swimming, median net 13 px/s, pixels because no scale | The app's own answer, recorded in `media/motion.mp4`'s session (2026-10-15 18:31) |
-| Source code on GitHub from the first release | Go-live checklist "Approve and publish" (not public yet) |
+| Source code on GitHub with the first public release | Go-live checklist "Approve and publish" (the app's repository is still private) |
 | Table still: real Measurements page for the 1,523 cells | `media/table.jpg`, a frame of the cells recording |
 | Image analysis at the speed new models arrive; hundreds of models, new ones published every week | The owner's framing of the field (2026-10-15 call); the BioImage Model Zoo and Hugging Face add microscopy models continually. A statement about the field, not a count of the catalog |
 | Find a model in the catalog, from a BioImage Model Zoo or Hugging Face link, a Fiji function or a colleague's share | `catalog/README.md` "Add your own", "Channels", "Share it (no account)"; Fiji bindings |
@@ -109,3 +109,6 @@ repository milestone handoff. No general update feed is replaced.
 - Keep Working, save blockers and restart consequences: native restart admission and WorkspaceViews checks; focused synthetic regressions cover unsaved notes/layouts across Projects. Native outgoing update exercised refusal/deferral/later confirmation. Arbitrary unsaved tool state is explicitly not promised preservation.
 - Exact signed/notarized artifact: 0.1.2 build 3269, SHA256 `5b3ef0e99d42849cf6f229f19989c173e553d8630b7dee6d58aa8129bfb29457`. Real installed 0.1.1 updated through Sparkle from a separately signed private feed; all 225 scientific-storage files unchanged, 27 documents readable and corrected uint16 label 7 reopened. Final native Settings shows installed 0.1.2.
 - Current failed checks and qualification limits: source `docs/handoff/2026-10-19-beta-milestone.md` and `services/sim/results/latest.json`. Backend 9,952 passed / 138 skipped / 1 failed; isolated diagnostic file 16 passed. Studio 2,286 tests passed. Simulation 28/36 with teardown passing, concurrent packaging/VM load disclosed. No thresholds changed.
+| Hero: a microscopy workspace for the Mac; open images and recordings, outline and measure with models on your Mac, each result keeps the model and settings | Assets as session sources (ADR 0022); local catalog models (`catalog/models/*`, "On this Mac"); evidence executions record implementation, version and settings (`evidence.py`) |
+| Install: first launch prepares Python and packages, about 350 MB, a few minutes, shown step by step | `packaging/macos/HookeUI/main.swift` (its Prepare, Download, Initialize, Open steps; "about 350 MB"); README "What happens on a Mac" (118 s and 187 s in fresh VMs); the L7a clean-VM run took 100 s from opening to the studio (2026-10-19) |
+| The bundled example finds bright regions on your Mac; 271 of them | The L7a clean-VM run: one local `basic-bright-objects` execution, 271 members, no key (2026-10-19) |
