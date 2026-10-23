@@ -127,3 +127,7 @@ repository milestone handoff. No general update feed is replaced.
 - Current companion links identify the frozen reader-v7, exact Cellpose/animation and pinned human-mitosis input. Earlier scientific evidence retains its scope; these links do not imply full large-data/cloud/independent qualification.
 - Three latest simulated-camera responsiveness scenarios remain failed under heavy host contention (Cellpose768ms p95; combined321ms; maintenance455ms). The 300ms threshold remains unchanged. Historical0.2.1 verification is explicitly labeled historical.
 - The original October19 website feed retains its signed0.1.2 compatibility bridge; that installed version uses the current normal GitHub release feed. No Beta/Stable channel switch or implicit data migration is introduced.
+
+## 23 October 2026 — release links without per-version website edits
+
+Download and companion links use the Stable repository's `/releases/latest` page. Visitors select the DMG and optional companion files from that release's Assets; no browser API request or version-specific URL needs maintaining. The release description and immutable receipt own current version/source/acceptance/limits. Historical website evidence retains its original scope and never certifies a newer release. This changes links/copy only; it does not publish an app, alter either feed or modify the signed compatibility bridge.
