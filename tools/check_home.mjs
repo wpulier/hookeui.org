@@ -7,8 +7,8 @@ const { chromium } = await import(process.env.PLAYWRIGHT);
 const BASE = process.env.BASE || 'http://127.0.0.1:8000';
 
 // Opens a page, records pageerror events in page.errors, runs fn, always closes it.
-async function withPage(browser, size, fn) {
-  const page = await browser.newPage({ viewport: size });
+async function withPage(browser, size, fn, options = {}) {
+  const page = await browser.newPage({ viewport: size, ...options });
   page.errors = [];
   page.on('pageerror', (e) => page.errors.push(String(e)));
   try {
@@ -106,7 +106,78 @@ async function corkPlate(browser) {
   });
 }
 
-const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate };
+// Chapters whose art code exists. A later task adds its chapter's id here.
+const ART = ['researchers'];
+const frames = (page) => page.$eval('#researchers canvas.art', (c) => Number(c.dataset.frames || 0));
+const toView = (page, id) => page.evaluate((i) => document.getElementById(i).scrollIntoView(), id);
+
+async function animatesOnlyOnScreen(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await toView(page, 'researchers');
+    await page.waitForTimeout(1000);
+    const f1 = await frames(page);
+    if (!(f1 > 0)) throw new Error(`no frames drawn on screen (${f1})`);
+    await toView(page, 'capabilities');
+    await page.waitForTimeout(300);
+    const f2 = await frames(page);
+    await page.waitForTimeout(1000);
+    const f3 = await frames(page);
+    if (f3 !== f2) throw new Error(`kept drawing off screen: ${f2} -> ${f3}`);
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  });
+}
+
+async function reducedMotion(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await toView(page, 'researchers');
+    await page.waitForTimeout(2000);
+    const f = await frames(page);
+    if (f < 1 || f > 2) throw new Error(`reduced motion drew ${f} frames, expected 1 or 2`);
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  }, { reducedMotion: 'reduce' });
+}
+
+async function touchScroll(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await page.waitForTimeout(500);
+    const r = await page.$$eval('canvas.art', (cs) => cs.map((c) => {
+      const t = new Touch({ identifier: 1, target: c, clientX: 100, clientY: 400 });
+      const tm = new TouchEvent('touchmove', { cancelable: true, bubbles: true, touches: [t], targetTouches: [t], changedTouches: [t] });
+      const wh = new WheelEvent('wheel', { cancelable: true, bubbles: true, deltaY: 50 });
+      c.dispatchEvent(tm); c.dispatchEvent(wh);
+      return { id: c.parentElement.id, ta: getComputedStyle(c).touchAction, tm: tm.defaultPrevented, wh: wh.defaultPrevented };
+    }));
+    if (!r.length) throw new Error('no canvas.art');
+    for (const c of r) {
+      if (c.ta !== 'pan-y') throw new Error(`${c.id}: touch-action is ${c.ta}`);
+      if (c.tm || c.wh) throw new Error(`${c.id}: touchmove prevented=${c.tm}, wheel prevented=${c.wh}`);
+    }
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  }, { hasTouch: true, isMobile: true });
+}
+
+async function dataFailure(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.route('**/media/sky.json', (r) => r.abort());
+    await page.goto(`${BASE}/`);
+    for (const id of ART) {
+      await toView(page, id);
+      await page.waitForTimeout(800);
+      const r = await page.evaluate((i) => {
+        const c = document.getElementById(i), st = c.querySelector('.still');
+        return { cls: c.classList.contains('no-art'), shown: getComputedStyle(st).display !== 'none' && st.getBoundingClientRect().height > 0 };
+      }, id);
+      if (!r.cls) throw new Error(`${id}: no no-art class after sky.json failed`);
+      if (!r.shown) throw new Error(`${id}: the still is not visible`);
+    }
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  });
+}
+
+const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, touchScroll, dataFailure };
 
 const names = process.argv.slice(2);
 const unknown = names.filter((n) => !CHECKS[n]);
