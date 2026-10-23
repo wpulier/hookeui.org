@@ -1,36 +1,159 @@
 {
   "entries": {
-    "cellpose-sam": { "name": "Cellpose-SAM", "where": "mac" },
-    "micro-sam-lm": { "name": "micro-sam", "where": "mac" },
-    "edgetam": { "name": "EdgeTAM", "where": "mac" },
-    "trackastra": { "name": "Trackastra", "where": "mac" },
-    "bioclip-2": { "name": "BioCLIP 2", "where": "mac" },
-    "fiji-analyze-particles": { "name": "Fiji · Analyze Particles", "where": "mac" },
-    "brainreg": { "name": "brainreg", "where": "mac" },
-    "allen-mouse-25um": { "name": "Allen atlas", "where": "mac" },
-    "dinov3-small": { "name": "DINOv3", "where": "mac" },
-    "spot-measure": { "name": "Spot measure", "where": "mac" },
-    "spot-shape": { "name": "Spot shape", "where": "mac" },
-    "gemini-3.8-flash": { "name": "Gemini", "where": "cloud" },
-    "gpt-6.1-sol": { "name": "GPT", "where": "cloud" },
-    "claude-opus-5-5": { "name": "Claude", "where": "cloud" },
-    "sam3.1-cloud": { "name": "SAM 3.1 (cloud)", "where": "cloud" }
+    "cellpose-sam": {
+      "name": "Cellpose-SAM",
+      "where": "mac"
+    },
+    "micro-sam-lm": {
+      "name": "micro-sam",
+      "where": "mac"
+    },
+    "edgetam": {
+      "name": "EdgeTAM",
+      "where": "mac"
+    },
+    "trackastra": {
+      "name": "Trackastra",
+      "where": "mac"
+    },
+    "bioclip-2": {
+      "name": "BioCLIP 2",
+      "where": "mac"
+    },
+    "fiji-analyze-particles": {
+      "name": "Fiji · Analyze Particles",
+      "where": "mac"
+    },
+    "brainreg": {
+      "name": "brainreg",
+      "where": "mac"
+    },
+    "allen-mouse-25um": {
+      "name": "Allen atlas",
+      "where": "mac"
+    },
+    "dinov3-small": {
+      "name": "DINOv3",
+      "where": "mac"
+    },
+    "spot-measure": {
+      "name": "Spot measure",
+      "where": "mac"
+    },
+    "spot-shape": {
+      "name": "Spot shape",
+      "where": "mac"
+    },
+    "gemini-3.8-flash": {
+      "name": "Gemini",
+      "where": "cloud"
+    },
+    "gpt-6.1-sol": {
+      "name": "GPT",
+      "where": "cloud"
+    },
+    "claude-opus-5-5": {
+      "name": "Claude",
+      "where": "cloud"
+    },
+    "sam3.1-cloud": {
+      "name": "SAM 3.1 hosted",
+      "where": "cloud"
+    },
+    "instanseg-brightfield": {
+      "name": "InstanSeg",
+      "where": "mac"
+    },
+    "sam3.1-local": {
+      "name": "SAM 3.1",
+      "where": "mac"
+    },
+    "medsiglip": {
+      "name": "MedSigLIP",
+      "where": "mac"
+    },
+    "fiji": {
+      "name": "Fiji",
+      "where": "mac"
+    }
   },
-  "ring": ["cellpose-sam", "micro-sam-lm", "edgetam", "trackastra", "bioclip-2", "fiji-analyze-particles", "brainreg", "allen-mouse-25um", "gemini-3.8-flash", "gpt-6.1-sol", "claude-opus-5-5", "sam3.1-cloud"],
   "lenses": [
-    { "id": null, "name": "Your image", "sub": "the stained stem" },
-    { "id": "cellpose-sam", "sub": "every outline" },
-    { "id": "bioclip-2", "sub": "cells that look alike" },
-    { "id": "trackastra", "sub": "where they move" },
-    { "id": "fiji-analyze-particles", "sub": "every measurement" },
-    { "id": "gemini-3.8-flash", "sub": "names, as best guesses" }
+    {
+      "id": null,
+      "name": "Your image",
+      "sub": "the stained stem"
+    },
+    {
+      "id": "cellpose-sam",
+      "sub": "every outline"
+    },
+    {
+      "id": "bioclip-2",
+      "sub": "cells that look alike"
+    },
+    {
+      "id": "trackastra",
+      "sub": "where they move"
+    },
+    {
+      "id": "fiji-analyze-particles",
+      "sub": "every measurement"
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "sub": "names, as best guesses"
+    }
   ],
-  "ask": [
-    { "q": "How many of these cells are dividing?", "a": "A count, every cell marked “Probably” until you confirm it, and which models agreed.",
-      "plan": [["cellpose-sam", "find every cell"], ["spot-shape", "how round is each one"], ["gemini-3.8-flash", "which look like they are dividing"], ["bioclip-2", "group look-alikes, as a cross-check"]] },
-    { "q": "How fast are they swimming?", "a": "A speed for every track, in pixels until you set a scale, and why some were left out.",
-      "plan": [["edgetam", "follow each swimmer"], ["trackastra", "link them between frames"], ["spot-measure", "the speed of every track"], ["claude-opus-5-5", "explain the spread"]] },
-    { "q": "Is this the same tissue as yesterday’s slide?", "a": "A side-by-side: what matched, what didn’t, and which model said so.",
-      "plan": [["dinov3-small", "describe both images"], ["sam3.1-cloud", "outline the regions"], ["fiji-analyze-particles", "measure both"], ["gpt-6.1-sol", "compare them and say why"]] }
-  ]
+  "first": {
+    "models": [
+      "cellpose-sam",
+      "micro-sam-lm",
+      "instanseg-brightfield",
+      "edgetam",
+      "sam3.1-local",
+      "trackastra",
+      "bioclip-2",
+      "dinov3-small",
+      "medsiglip",
+      "fiji",
+      "spot-measure",
+      "brainreg",
+      "gemini-3.8-flash",
+      "gpt-6.1-sol",
+      "claude-opus-5-5",
+      "sam3.1-cloud"
+    ],
+    "questions": [
+      {
+        "q": "How many of these cells are dividing?",
+        "use": {
+          "cellpose-sam": "find every cell",
+          "spot-measure": "measure each one",
+          "bioclip-2": "group look-alikes",
+          "fiji": "count them",
+          "gemini-3.8-flash": "which look like they divide"
+        }
+      },
+      {
+        "q": "Follow every swimmer for the next hour.",
+        "use": {
+          "edgetam": "follow each one",
+          "trackastra": "link them over time",
+          "cellpose-sam": "outline every frame",
+          "spot-measure": "speed of every track",
+          "claude-opus-5-5": "explain the spread"
+        }
+      },
+      {
+        "q": "What changed since yesterday’s slide?",
+        "use": {
+          "dinov3-small": "describe both slides",
+          "sam3.1-cloud": "outline the regions",
+          "micro-sam-lm": "refine the edges",
+          "fiji": "measure both",
+          "gpt-6.1-sol": "say what changed, and why"
+        }
+      }
+    ]
+  }
 }

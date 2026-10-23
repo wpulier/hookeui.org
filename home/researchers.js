@@ -1,74 +1,135 @@
-// Chapter 2: a dataset as a field of eyepieces. Two swarms of researchers, gold from your Mac and blue from the cloud,
-// spread across it; each specimen lights up as it is worked on.
-import { stage, loadSky, artFailed, WARM, COOL, TAU, rnd, rgb, hexA, dot, fade } from './stage.js';
-
-function sprite(cells, lit, px) {
-  const c = document.createElement('canvas'); c.width = c.height = px; const g = c.getContext('2d');
-  g.save(); g.beginPath(); g.arc(px / 2, px / 2, px / 2 - 1, 0, TAU); g.clip();
-  const sc = px / 3.2;
-  for (const p of cells) { g.fillStyle = lit ? rgb(p.r, p.g, p.b, 0.75) : 'rgba(120,128,160,0.45)'; dot(g, px / 2 + p.x * sc, px / 2 - p.y * sc + px * 0.06, lit ? 0.6 + p.m * 1.1 : 0.5 + p.m * 0.6); }
-  g.restore();
-  g.strokeStyle = lit ? 'rgba(255,255,255,0.35)' : 'rgba(120,128,160,0.25)'; g.lineWidth = 1; g.beginPath(); g.arc(px / 2, px / 2, px / 2 - 1, 0, TAU); g.stroke();
-  return c;
-}
+// Chapter 2, Researchers: a dataset as a field of eyepieces receding into the dark. Two swarms of researchers, warm from
+// your Mac and cool from the cloud, claim specimens, circle them as they work and light them; the pointer pulls them.
+import { THREE, GOLD, BLUE, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, aim, toScreen } from './gl.js';
+import { stage, loadSky, artFailed, rnd } from './stage.js';
 
 export function startResearchers(section) {
-  loadSky().then(({ cells }) => {
-    const DIM = sprite(cells, false, 160), LIT = sprite(cells, true, 160);
-    let C = {};
-    stage(section, {
-      init(s) {
-        const top = 64, cols = Math.max(4, Math.round(s.W / 96)), rows = Math.max(4, Math.round((s.H - top) / 96)), cw = s.W / cols, ch = (s.H - top) / rows, d = Math.min(cw, ch) * 0.7;
-        const tiles = [];
-        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) tiles.push({ x: (i + 0.5) * cw, y: top + (j + 0.5) * ch, d, rot: rnd(0, TAU), prog: 0, by: null, claimed: false });
-        const agents = [], total = Math.min(62, Math.round(tiles.length * 1.1)), warm = Math.round(total * 22 / 62);
-        for (let k = 0; k < warm; k++) agents.push({ x: rnd(0, 40), y: s.H - rnd(0, 40), vx: 0, vy: 0, cloud: false, col: WARM[k % WARM.length], tile: null, orbit: rnd(0, TAU), speed: 0.55 });
-        for (let k = 0; k < total - warm; k++) agents.push({ x: s.W - rnd(0, 40), y: rnd(0, 40), vx: 0, vy: 0, cloud: true, col: COOL[k % COOL.length], tile: null, orbit: rnd(0, TAU), speed: 0.75 });
-        C = { tiles, agents, reset: 0 };
-      },
-      frame(s, ctx, dt) {
-        fade(ctx, s, 0.3);
-        for (const t of C.tiles) {
-          ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.rot);
-          ctx.globalAlpha = 0.35; ctx.drawImage(DIM, -t.d / 2, -t.d / 2, t.d, t.d);
-          if (t.prog > 0) { ctx.globalAlpha = Math.min(1, t.prog) * 0.8; ctx.drawImage(LIT, -t.d / 2, -t.d / 2, t.d, t.d); }
-          ctx.restore();
-          if (t.prog >= 1 && t.by) { ctx.strokeStyle = hexA(t.by, 0.5); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(t.x, t.y, t.d / 2 + 2, 0, TAU); ctx.stroke(); }
-        }
-        ctx.globalAlpha = 1;
-        // Wide: the words sit over the lower left, so a veil keeps the tiles clear of them. Narrow: the canvas is below the words.
-        if (s.W > 760) {
-          const veil = ctx.createRadialGradient(0, s.H, 0, 0, s.H, s.W * 0.5); veil.addColorStop(0, 'rgba(4,5,11,0.97)'); veil.addColorStop(0.6, 'rgba(4,5,11,0.9)'); veil.addColorStop(1, 'rgba(4,5,11,0)');
-          ctx.fillStyle = veil; ctx.fillRect(0, 0, s.W * 0.6, s.H);
-        }
-        ctx.globalCompositeOperation = 'lighter';
-        const free = () => C.tiles.filter((t) => !t.claimed && t.prog < 1);
-        for (const a of C.agents) {
-          if (!a.tile) {
-            const f = free();
-            if (f.length) { let best = null, bd = 1e18; for (let n = 0; n < 6; n++) { const t = f[Math.random() * f.length | 0], dd = (t.x - a.x) ** 2 + (t.y - a.y) ** 2; if (dd < bd) { bd = dd; best = t; } } a.tile = best; best.claimed = true; }
-          }
-          // With no tile to work on, an agent circles near its corner instead of piling up there.
-          a.orbit += dt * 1.5; const rr = 14 + (a.col.charCodeAt(2) % 5) * 7;
-          let tx = (a.cloud ? s.W - 40 : 40) + Math.cos(a.orbit) * rr, ty = (a.cloud ? 40 : s.H - 40) + Math.sin(a.orbit) * rr;
-          if (a.tile) {
-            const t = a.tile, dd = Math.hypot(t.x - a.x, t.y - a.y);
-            if (dd < t.d * 0.7) { a.orbit += dt * 5; t.prog += dt * (a.cloud ? 0.32 : 0.4); t.by = a.col; if (t.prog >= 1) { t.prog = 1; a.tile = null; } }
-            tx = t.x + Math.cos(a.orbit) * t.d * 0.42; ty = t.y + Math.sin(a.orbit) * t.d * 0.42;
-          }
-          if (Math.hypot(s.mx - a.x, s.my - a.y) < 160) { tx = tx * 0.6 + s.mx * 0.4; ty = ty * 0.6 + s.my * 0.4; }
-          const dx = tx - a.x, dy = ty - a.y, dl = Math.hypot(dx, dy) + 1e-3;
-          const k = dt * 60, damp = Math.pow(0.9, k); // per-second motion, so a dt = 0 frame (reduced motion) redraws without moving
-          a.vx += dx / dl * a.speed * k; a.vy += dy / dl * a.speed * k; a.vx *= damp; a.vy *= damp; a.x += a.vx * k; a.y += a.vy * k;
-          ctx.fillStyle = hexA(a.col, 0.95); dot(ctx, a.x, a.y, 1.8);
-          ctx.fillStyle = hexA(a.col, 0.12); dot(ctx, a.x, a.y, 6);
-        }
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.font = '600 11px Inter, system-ui'; ctx.textAlign = 'left'; ctx.fillStyle = hexA(WARM[0], 0.85); ctx.fillText('YOUR MAC', 18, s.H * 0.7 - 8);
-        ctx.textAlign = 'right'; ctx.fillStyle = hexA(COOL[0], 0.85); ctx.fillText('CLOUD', s.W - 18, 82);
-        // Everything done: rest a moment, then start the dataset again.
-        if (C.tiles.every((t) => t.prog >= 1)) { C.reset += dt; if (C.reset > 2.5) { C.tiles.forEach((t) => { t.prog = 0; t.by = null; t.claimed = false; }); C.reset = 0; } }
-      },
+  if (!webgl()) return artFailed(section);
+  loadSky().then((sky) => build(section, sky), () => artFailed(section));
+}
+
+// One picture of the stem's cells in a disc, used by every eyepiece.
+function stemSprite(cells) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'), sc = 256 / 3.1;
+  g.beginPath(); g.arc(128, 128, 126, 0, 7); g.clip();
+  for (const p of cells) { g.fillStyle = `rgba(${p.r * 255 | 0},${p.g * 255 | 0},${p.b * 255 | 0},0.9)`; g.beginPath(); g.arc(128 + (p.x + 0.068) * sc, 128 - (p.y - 0.143) * sc, 0.9 + p.m * 1.7, 0, 7); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+function build(section, sky) {
+  const view = makeView(section.querySelector('canvas.art'));
+  const { scene, camera, composer } = view;
+  const U = pointsUniforms(); U.intro.value = 1;
+  const tex = stemSprite(sky.cells);
+  const tags = ['YOUR MAC', 'CLOUD'].map((t, i) => { const el = document.createElement('div'); el.className = `res-tag ${i ? 'cloud' : 'mac'}`; el.textContent = t; section.appendChild(el); return el; });
+  let field = null, tiles = [], agents = [], agentsGeo = null, agentsPts = null, reset = 0, cols = 0, rows = 0, W = 1, H = 1, narrow = false;
+  const SP = 1.0, TRAIL = 4;
+
+  const tileMat = new THREE.ShaderMaterial({
+    uniforms: { map: { value: tex }, far: { value: 10 } }, transparent: true, depthWrite: false,
+    vertexShader: `
+      attribute vec3 offset; attribute float prog; attribute vec3 tint; attribute float rot;
+      varying vec2 vUv; varying float vProg; varying vec3 vTint; varying float vDepth;
+      void main() {
+        vUv = uv; vProg = prog; vTint = tint;
+        float c = cos(rot), s = sin(rot);
+        vec3 p = vec3(position.x * c - position.y * s, 0.0, -(position.x * s + position.y * c)) + offset;
+        vec4 mv = modelViewMatrix * vec4(p, 1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform sampler2D map; uniform float far;
+      varying vec2 vUv; varying float vProg; varying vec3 vTint; varying float vDepth;
+      void main() {
+        float r = length(vUv - 0.5) * 2.0; if (r > 1.0) discard;
+        vec4 t = texture2D(map, vUv);
+        vec3 dim = vec3(dot(t.rgb, vec3(0.3, 0.5, 0.2))) * vec3(0.07, 0.08, 0.12);
+        vec3 col = mix(dim, t.rgb * 0.55, vProg) * t.a;
+        float ring = smoothstep(0.9, 0.97, r) * (1.0 - smoothstep(0.97, 1.0, r));
+        col += ring * mix(vec3(0.07, 0.08, 0.12), vTint * 0.75, vProg);
+        float fade = 1.0 - smoothstep(far * 0.55, far, vDepth);
+        gl_FragColor = vec4(col, (0.3 + 0.7 * max(t.a, ring)) * fade);
+      }`,
+  });
+
+  function layout(s) {
+    W = s.W; H = s.H; narrow = W < 761;
+    view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.3 : 1);
+    cols = narrow ? 6 : 15; rows = narrow ? 10 : 14;
+    const n = cols * rows, old = tiles;
+    tiles = Array.from({ length: n }, (_, i) => ({ x: (i % cols - (cols - 1) / 2) * SP, z: (Math.floor(i / cols) - (rows - 1) / 2) * SP, prog: old[i] ? old[i].prog : 0, tint: old[i] ? old[i].tint : GOLD, claimed: false }));
+    if (field) { scene.remove(field); field.geometry.dispose(); }
+    const base = new THREE.PlaneGeometry(SP * 0.82, SP * 0.82), g = new THREE.InstancedBufferGeometry();
+    g.index = base.index; g.setAttribute('position', base.attributes.position); g.setAttribute('uv', base.attributes.uv);
+    g.setAttribute('offset', new THREE.InstancedBufferAttribute(new Float32Array(tiles.flatMap((t) => [t.x, 0, t.z])), 3));
+    g.setAttribute('prog', new THREE.InstancedBufferAttribute(new Float32Array(n), 1));
+    g.setAttribute('tint', new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3));
+    g.setAttribute('rot', new THREE.InstancedBufferAttribute(new Float32Array(tiles.map(() => rnd(0, 6.283))), 1));
+    g.instanceCount = n;
+    field = new THREE.Mesh(g, tileMat); field.frustumCulled = false; scene.add(field);
+    // researchers: about one per specimen, split as warm 22 to cool 40
+    const count = Math.min(110, Math.round(n * 0.8)), warm = Math.round(count * 22 / 62);
+    const ox = (cols / 2 + 0.6) * SP, oz = (rows / 2 + 0.6) * SP;
+    agents = Array.from({ length: count }, (_, k) => {
+      const mac = k < warm, x = mac ? -ox + rnd(-0.3, 0.3) : ox + rnd(-0.3, 0.3), z = mac ? oz + rnd(-0.3, 0.3) : -oz + rnd(-0.3, 0.3);
+      return { mac, col: mac ? GOLD : BLUE, x, z, vx: 0, vz: 0, home: [x, z], tile: null, orbit: rnd(0, 6.283), speed: mac ? 1.7 : 2.3, trail: Array.from({ length: TRAIL }, () => [x, z]) };
     });
-  }).catch(() => artFailed(section));
+    if (agentsPts) { scene.remove(agentsPts); agentsGeo.dispose(); }
+    agentsGeo = pointsGeometry(count * TRAIL);
+    agentsPts = new THREE.Points(agentsGeo, pointsMaterial(U)); agentsPts.frustumCulled = false; scene.add(agentsPts);
+    // the camera looks across the field from its near edge, the far rows fading into the dark
+    const span = Math.max(cols, rows * (W / H)) * SP;
+    const d = narrow ? rows * SP * 1.25 : span * 0.82;
+    tileMat.uniforms.far.value = d * 1.9;
+    aim(camera, new THREE.Vector3(narrow ? 0 : SP * 1.5, 0, narrow ? -0.5 : -0.8), narrow ? 0.95 : 0.62, d, { x: 0, y: 0, w: W, h: H }, W, H);
+  }
+
+  const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3(), v = new THREE.Vector3();
+  stage(section, {
+    init: layout,
+    frame(s, dt) {
+      U.time.value = s.t;
+      const k = dt * 60;
+      let pull = null;
+      if (s.mx > -999) { ray.setFromCamera(new THREE.Vector2(s.mx / W * 2 - 1, -(s.my / H) * 2 + 1), camera); if (ray.ray.intersectPlane(plane, hit)) pull = hit.clone(); }
+      const free = () => tiles.filter((t) => !t.claimed && t.prog < 1);
+      const A = agentsGeo.attributes;
+      agents.forEach((a, i) => {
+        if (!a.tile) {
+          const f = free();
+          if (f.length) { let best = null, bd = 1e9; for (let n = 0; n < 6; n++) { const t = f[Math.random() * f.length | 0], dd = (t.x - a.x) ** 2 + (t.z - a.z) ** 2; if (dd < bd) { bd = dd; best = t; } } a.tile = best; best.claimed = true; }
+        }
+        let tx = a.home[0] + Math.cos(s.t * 0.7 + i) * 0.4, tz = a.home[1] + Math.sin(s.t * 0.7 + i) * 0.4;
+        if (a.tile) {
+          const t = a.tile;
+          a.orbit += dt * 4.5;
+          tx = t.x + Math.cos(a.orbit) * 0.36 * SP; tz = t.z + Math.sin(a.orbit) * 0.36 * SP;
+          if (Math.hypot(t.x - a.x, t.z - a.z) < 0.6 * SP) { t.prog = Math.min(1, t.prog + dt * (a.mac ? 0.16 : 0.12)); t.tint = a.col; if (t.prog >= 1) a.tile = null; }
+        }
+        if (pull && Math.hypot(pull.x - a.x, pull.z - a.z) < 2.6 * SP) { tx = tx * 0.55 + pull.x * 0.45; tz = tz * 0.55 + pull.z * 0.45; }
+        const dx = tx - a.x, dz = tz - a.z, dl = Math.hypot(dx, dz) + 1e-3;
+        a.vx += dx / dl * a.speed * 0.0035 * k; a.vz += dz / dl * a.speed * 0.0035 * k;
+        const damp = Math.pow(0.9, k); a.vx *= damp; a.vz *= damp; a.x += a.vx * k; a.z += a.vz * k;
+        if (k > 0) { a.trail.pop(); a.trail.unshift([a.x, a.z]); }
+        a.trail.forEach(([x, z], j) => {
+          const w = i * TRAIL + j;
+          A.position.setXYZ(w, x, 0.1, z); A.start.setXYZ(w, x, 0.1, z);
+          A.color.setXYZ(w, a.col.r, a.col.g, a.col.b); A.tint.setXYZ(w, a.col.r, a.col.g, a.col.b);
+          A.size.setX(w, (narrow ? 70 : 64) * (1 - j * 0.2)); A.lit.setX(w, 0.9 - j * 0.18); A.seed.setX(w, 0);
+        });
+      });
+      for (const key of ['position', 'start', 'color', 'tint', 'size', 'lit']) A[key].needsUpdate = true;
+      const P = field.geometry.attributes.prog, Tn = field.geometry.attributes.tint;
+      tiles.forEach((t, i) => { P.setX(i, t.prog); Tn.setXYZ(i, t.tint.r, t.tint.g, t.tint.b); });
+      P.needsUpdate = Tn.needsUpdate = true;
+      if (tiles.every((t) => t.prog >= 1)) { reset += dt; if (reset > 2.5) { tiles.forEach((t) => { t.prog = 0; t.claimed = false; }); reset = 0; } }
+      // the swarms' corners, named, kept on screen
+      const ox = (cols / 2 + 0.6) * SP, oz = (rows / 2 + 0.6) * SP;
+      [[-ox, oz], [ox, -oz]].forEach(([x, z], i) => {
+        let [px, py] = toScreen(new THREE.Vector3(x, 0, z), null, camera, W, H, v);
+        px = Math.max(16, Math.min(W - 80, px)); py = Math.max(80, Math.min(H - 30, py)) + s.canvas.offsetTop;
+        tags[i].style.transform = `translate(${px}px, ${py}px)`;
+      });
+      composer.render(dt);
+    },
+  });
 }

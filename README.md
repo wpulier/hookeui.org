@@ -1,6 +1,7 @@
 # hookeui.org
 
-The website for HookeUI. Plain HTML and CSS, a small script, and a three.js scene for the hero, served by GitHub Pages from
+The website for HookeUI. Plain HTML and CSS, small scripts, and three.js scenes for the home page's four chapters and the
+story page's hero, served by GitHub Pages from
 this repository's `main` branch at https://hookeui.org.
 
 - `media/`: loops recorded in HookeUI on recordings from a real microscope; nothing is mocked up.
@@ -26,13 +27,18 @@ after each change.
    | To change | Edit |
    |---|---|
    | Words and sections of the story page | `story.html` |
-   | Words and sections of the home page | `home/` (filled in as the redesign lands) |
-   | How the home page looks and moves | `home/` (filled in as the redesign lands) |
+   | Words and sections of the home page | `index.html` |
+   | How the home page looks | `home/home.css` |
+   | The first screen (workspace, specimen, question, every model) | `home/first.js` |
+   | Researchers, Workspace, Capabilities chapters | `home/researchers.js`, `home/workspace.js`, `home/capabilities.js` |
+   | What every chapter shares (three.js view, glow, points, spores, camera fitting) | `home/gl.js`; canvas, pointer and data in `home/stage.js` |
+   | Model names, Mac or cloud, the first screen's questions | `home/entries.json` (checked against the app's catalog by `tools/check_home.py --catalog`) |
+   | Each chapter's still (no WebGL, no script) | `media/home-*.jpg` |
    | How it looks | `style.css` |
    | The plate, the catalog stars, the header | `site.js` |
    | The hero's sky | `hero-scene.js` |
    | Videos and pictures | `media/` |
-3. Look at it on your machine. It has to be served; opening `story.html` as a file won't draw the sky.
+3. Look at it on your machine. It has to be served; opening `index.html` or `story.html` as a file won't draw anything.
    ```bash
    python3 -m http.server 8000
    ```

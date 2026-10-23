@@ -70,9 +70,13 @@ def entries_real(args):
         want = "cloud" if m and m.group(1) == "cloud" else "mac"
         if e.get("where") != want:
             failures.append(f"{eid}: where is {e.get('where')!r}, catalog runs {m.group(1) if m else None!r} means {want!r}")
-    used = list(data.get("ring", [])) + [l["id"] for l in data.get("lenses", []) if l.get("id")]
-    for q in data.get("ask", []):
-        used += [step[0] for step in q.get("plan", [])]
+    first = data.get("first", {})
+    used = list(first.get("models", [])) + [l["id"] for l in data.get("lenses", []) if l.get("id")]
+    for q in first.get("questions", []):
+        used += list(q.get("use", {}))
+        missing = [i for i in q.get("use", {}) if i not in first.get("models", [])]
+        if missing:
+            failures.append(f"question {q.get('q')!r} uses {missing}, which the first screen's arc doesn't show")
     for eid in used:
         if eid not in entries:
             failures.append(f"{eid} is used but not in entries")

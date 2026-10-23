@@ -1,118 +1,139 @@
-// Chapter 3: the stem as a stack of layers, the image and then what each model made of it, all registered to each other.
-// Move across to turn the stack, up and down to open it, point at a cell to thread it through every layer. The readout
-// shows only what plate.json measured for that cell; the art is a drawing, the words are not.
-import { stage, loadSky, loadPlate, artFailed, WARM, COOL, TAU, rgb, hexA, dot, clamp } from './stage.js';
+// Chapter 3, Workspace: the stem as a stack of layers in depth: the image, then what each model made of it, registered
+// to each other. The pointer turns the stack and opens it; a pointed-at cell lights through every layer, and the
+// readout names each layer's model.
+import { THREE, GOLD, PALE, lin, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, aim, fitDistance, toScreen, keepApart, FRAME } from './gl.js';
+import { stage, loadSky, artFailed, clamp } from './stage.js';
 
-const IMAGE = '#c8ccdc';
-const TILT = 0.4;
-// Each lens id draws in its own style and colour; the layer order and names come from entries.lenses.
-const STYLE = {
-  'cellpose-sam': { col: WARM[0], draw: 'outline' },
-  'bioclip-2': { col: WARM[2], draw: 'groups' },
-  trackastra: { col: WARM[3], draw: 'ticks' },
-  'fiji-analyze-particles': { col: WARM[1], draw: 'bars' },
-  'gemini-3.8-flash': { col: COOL[0], draw: 'dots' },
-};
-const GROUP = ['#ff8fb8', '#8fe3c0', '#b39bff', '#ffd27a'];
-const num = (v) => (Number.isInteger(v) ? v.toFixed(1) : String(v));
+const LAYER_COL = ['#c8ccdc', '#f2c46d', '#ffd98f', '#f59e6b', '#ffad66', '#8cc2ff'].map((h) => new THREE.Color(h));
+const GROUPS = ['#ff8fb8', '#8fe3c0', '#b39bff', '#ffd27a'].map((h) => new THREE.Color(h));
 
 export function startWorkspace(section, entries) {
-  const names = entries.entries;
-  const LAYERS = entries.lenses.map((l) => {
-    const e = l.id ? names[l.id] : null, st = (l.id && STYLE[l.id]) || { col: e && e.where === 'cloud' ? COOL[0] : WARM[0], draw: 'dots' };
-    const where = e ? (e.where === 'cloud' ? 'cloud' : 'on your Mac') : '';
-    return { name: e ? e.name : l.name, sub: l.sub, where, col: l.id ? st.col : IMAGE, draw: l.id ? st.draw : 'image' };
+  if (!webgl()) return artFailed(section);
+  loadSky().then((sky) => build(section, entries, sky), () => artFailed(section));
+}
+
+function build(section, entries, sky) {
+  const cells = sky.cells, N = cells.length;
+  const lenses = entries.lenses.map((l) => ({ name: l.id ? entries.entries[l.id].name : l.name, sub: l.sub }));
+  const pick = section.querySelector('#ws-pick');
+  const view = makeView(section.querySelector('canvas.art'));
+  const { scene, camera, composer } = view;
+  const stack = new THREE.Group(); scene.add(stack);
+  const U = pointsUniforms(); U.intro.value = 1;
+  const P = (c) => new THREE.Vector3(c.x - FRAME.cx, 0, -(c.y - FRAME.cy));
+
+  // ring points: a hollow circle per cell, for the outlines layer
+  const ringMat = new THREE.ShaderMaterial({
+    uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: `attribute vec3 color; attribute float size; uniform float px; varying vec3 vC;
+      void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = size * px / -mv.z; gl_Position = projectionMatrix * mv; vC = color; }`,
+    fragmentShader: `varying vec3 vC; void main() { float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.42, d) * smoothstep(0.3, 0.4, d); if (a < 0.01) discard; gl_FragColor = vec4(vC, a * 0.8); }`,
   });
-  const n = LAYERS.length;
-  const box = document.getElementById('ws-pick'), words = section.querySelector('.words');
-  let plate = null;
-  loadPlate().then((p) => { plate = p; }, () => {}); // without plate.json the art still draws and the readout shows no measurements
 
-  const start = ({ cells }) => {
-    cells.forEach((c) => {
-      c.pix = rgb(c.r, c.g, c.b, 0.5);
-      c.group = (c.r > c.b ? 0 : 1) + (c.m > 0.5 ? 2 : 0);
-      c.ph = Math.random() * TAU;
-    });
-    const L = { spread: 0.85, theta: -0.35 };
-    let G = null, last = null;
-    // Where the stack sits: wide puts it right of the words with labels to its right; narrow shrinks it to the canvas width.
-    const layout = (s, ctx) => {
-      const narrow = s.W <= 760;
-      ctx.font = '600 12px Inter, system-ui'; let lw = 0;
-      for (const ly of LAYERS) lw = Math.max(lw, ctx.measureText(ly.name).width, narrow ? ctx.measureText(ly.where || ly.sub).width : ctx.measureText(`${ly.sub}${ly.where ? ` · ${ly.where}` : ''}`).width);
-      const padX = narrow ? 10 : 18;
-      let S, cx;
-      if (narrow) { S = Math.min((s.W - 26 - lw) / 3.5, s.H * 0.2); cx = 8 + 1.75 * S; }
-      else { cx = s.W * 0.62; S = Math.min(s.W * 0.12, s.H * 0.27, (s.W - 12 - lw - padX - cx) / 1.9); }
-      G = { S, cx, cy: s.H * (narrow ? 0.5 : 0.56), narrow, padX, maxGap: (s.H * 0.9 - 1.4 * S) / (n - 1) };
-    };
-    const proj = (x, y, k) => {
-      const cs = Math.cos(L.theta), sn = Math.sin(L.theta), gap = Math.min(last.H * 0.085 * L.spread, G.maxGap);
-      return [G.cx + (x * cs - y * sn) * G.S, G.cy + ((n - 1) / 2 - k) * gap + (x * sn + y * cs) * G.S * TILT * -1];
-    };
-    window.hookeHome = window.hookeHome || {};
-    window.hookeHome.workspace = {
-      // Page coordinates of cell i on the bottom layer.
-      cellAt(i) { const r = section.querySelector('canvas.art').getBoundingClientRect(), [x, y] = proj(cells[i].x, cells[i].y, 0); return [r.left + x, r.top + y]; },
-    };
+  const layers = lenses.map((l, k) => {
+    const g = new THREE.Group(); stack.add(g);
+    const col = LAYER_COL[k];
+    const plate = new THREE.Mesh(new THREE.CircleGeometry(1.18, 96), new THREE.MeshBasicMaterial({ color: 0x0b0e1c, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
+    plate.rotation.x = -Math.PI / 2; g.add(plate);
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 129 }, (_, i) => new THREE.Vector3(Math.cos(i / 128 * Math.PI * 2) * 1.18, 0, Math.sin(i / 128 * Math.PI * 2) * 1.18))),
+      new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.3 })));
+    if (k === 0 || k === 2 || k === 5) {
+      const pick = k === 5 ? cells.filter((_, i) => i % 5 === 0) : cells, geo = pointsGeometry(pick.length), A = geo.attributes;
+      pick.forEach((c, i) => {
+        const p = P(c); A.position.setXYZ(i, p.x, 0.005, p.z); A.start.setXYZ(i, p.x, 0.005, p.z);
+        const cc = k === 0 ? new THREE.Color(lin(c.r), lin(c.g), lin(c.b)) : k === 2 ? GROUPS[(c.r > c.b ? 0 : 1) + (c.m > 0.5 ? 2 : 0)] : col;
+        A.color.setXYZ(i, cc.r * (k === 2 ? 0.7 : 1), cc.g * (k === 2 ? 0.7 : 1), cc.b * (k === 2 ? 0.7 : 1)); A.tint.setXYZ(i, cc.r, cc.g, cc.b);
+        A.size.setX(i, (k === 5 ? 40 : 20 + c.m * 34)); A.seed.setX(i, 0);
+      });
+      g.add(new THREE.Points(geo, pointsMaterial(U)));
+    } else if (k === 1) {
+      const geo = new THREE.BufferGeometry(), pos = new Float32Array(N * 3), c3 = new Float32Array(N * 3), sz = new Float32Array(N);
+      cells.forEach((c, i) => { const p = P(c); pos.set([p.x, 0.005, p.z], i * 3); c3.set([col.r * 0.8, col.g * 0.8, col.b * 0.8], i * 3); sz[i] = 30 + c.m * 50; });
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(c3, 3)); geo.setAttribute('size', new THREE.BufferAttribute(sz, 1));
+      g.add(new THREE.Points(geo, ringMat));
+    } else {
+      const segs = [];
+      cells.forEach((c, i) => {
+        if (k === 3 && i % 2) return; if (k === 4 && i % 3) return;
+        const p = P(c);
+        if (k === 3) { const a = (c.x * 7 + c.y * 11) % 6.283, l = 0.05 + c.m * 0.05; segs.push(p.x, 0.006, p.z, p.x + Math.cos(a) * l, 0.006, p.z + Math.sin(a) * l); }
+        else segs.push(p.x, 0, p.z, p.x, 0.04 + c.m * 0.16, p.z);
+      });
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(segs), 3));
+      g.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending })));
+    }
+    const el = document.createElement('div'); el.className = 'lbl on ws-lbl'; el.style.color = `#${col.getHexString()}`;
+    el.innerHTML = `${l.name}<small>${l.sub}</small>`; section.appendChild(el);
+    return { g, el, col };
+  });
 
-    stage(section, {
-      init(s, ctx) { last = s; layout(s, ctx); },
-      frame(s, ctx, dt) {
-        last = s;
-        ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#04050b'; ctx.fillRect(0, 0, s.W, s.H);
-        const { S, cx } = G, here = s.mx > -999;
-        // Which cell is pointed at: the nearest projection on any layer. While one is, the stack holds still so it can be read.
-        let pick = null, pd = 22;
-        if (here) for (let k = 0; k < n; k++) for (let i = 0; i < cells.length; i++) { const [x, y] = proj(cells[i].x, cells[i].y, k), d = Math.abs(x - s.mx) + Math.abs(y - s.my); if (d < pd) { pd = d; pick = i; } }
-        if (pick === null) {
-          const wantSpread = here ? 0.45 + (1 - s.my / s.H) * 1.1 : 0.85 + Math.sin(s.t * 0.6) * 0.12;
-          const wantTheta = here ? -0.9 + (s.mx / s.W) * 1.4 : -0.35 + Math.sin(s.t * 0.15) * 0.35;
-          const f = 1 - Math.pow(0.94, dt * 60); // per-second smoothing: a dt = 0 frame redraws without moving
-          L.spread += (wantSpread - L.spread) * f; L.theta += (wantTheta - L.theta) * f;
-        }
-        for (let k = 0; k < n; k++) {
-          const ly = LAYERS[k], [ox, oy] = proj(0, 0.15, k);
-          ctx.fillStyle = 'rgba(14,17,30,0.55)'; ctx.strokeStyle = hexA(ly.col, 0.22); ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.ellipse(ox, oy, 1.75 * S, 1.75 * S * TILT, 0, 0, TAU); ctx.fill(); ctx.stroke();
-          ctx.globalCompositeOperation = 'lighter';
-          if (ly.draw === 'outline' || ly.draw === 'ticks' || ly.draw === 'bars') { ctx.strokeStyle = hexA(ly.col, ly.draw === 'outline' ? 0.45 : 0.5); ctx.beginPath(); }
-          for (let i = 0; i < cells.length; i++) {
-            const c = cells[i], [x, y] = proj(c.x, c.y, k);
-            if (ly.draw === 'image') { ctx.fillStyle = c.pix; dot(ctx, x, y, 0.7 + c.m * 1.1); }
-            else if (ly.draw === 'outline') { const r = 1.4 + c.m * 2.6; ctx.moveTo(x + r, y); ctx.ellipse(x, y, r, r * TILT * 1.6, 0, 0, TAU); }
-            else if (ly.draw === 'groups') { ctx.fillStyle = hexA(GROUP[c.group], 0.6); dot(ctx, x, y, 0.8 + c.m); }
-            else if (ly.draw === 'ticks' && i % 2 === 0) { const a = c.ph + s.t * 0.4, [x2, y2] = proj(c.x + Math.cos(a) * 0.05, c.y + Math.sin(a) * 0.05, k); ctx.moveTo(x, y); ctx.lineTo(x2, y2); }
-            else if (ly.draw === 'bars' && i % 3 === 0) { ctx.moveTo(x, y); ctx.lineTo(x, y - 2 - c.m * 12 * L.spread); }
-            else if (ly.draw === 'dots' && i % 9 === 0) { ctx.fillStyle = hexA(ly.col, 0.35); dot(ctx, x, y, 1); }
+  // the thread through the pointed-at cell
+  const thread = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: 0xfff1d6, dashSize: 0.04, gapSize: 0.03, transparent: true, opacity: 0 }));
+  scene.add(thread);
+  const beadGeo = pointsGeometry(layers.length); scene.add(new THREE.Points(beadGeo, pointsMaterial(U)));
+
+  let W = 1, H = 1, narrow = false, gap = 0.3, yaw = -0.35, rect = null, dist = 8, el = 0.42, picked = -1, lastPickAt = '';
+  const target = new THREE.Vector3(0, 0, 0), v = new THREE.Vector3();
+  const place = (d) => aim(camera, target, el, d, rect, W, H);
+  function setGap(gp) { gap = gp; layers.forEach((l, k) => { l.g.position.y = (k - (layers.length - 1) / 2) * gp; }); stack.updateMatrixWorld(true); }
+  function layout(s) {
+    W = s.W; H = s.H; narrow = W < 761;
+    view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.2 : 1);
+    el = narrow ? 0.62 : 0.42;
+    const words = section.querySelector('.words').getBoundingClientRect(), cv = s.canvas.getBoundingClientRect();
+    rect = narrow ? { x: 8, y: 8, w: W - 16, h: H - 16 } : { x: Math.max(W * 0.42, words.right - cv.left + 30), y: 80, w: 0, h: H - 130 };
+    if (!narrow) rect.w = W - rect.x - W * 0.14;
+    setGap(narrow ? 0.46 : 0.6);
+    const bounds = () => { const b = []; layers.forEach((l) => { for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; b.push(new THREE.Vector3(Math.cos(a) * 1.2, l.g.position.y, Math.sin(a) * 1.2)); } }); return b; };
+    stack.rotation.y = -0.35; stack.updateMatrixWorld(true);
+    dist = fitDistance(place, bounds, camera, rect, W, H);
+    setGap(narrow ? 0.32 : 0.42);
+  }
+
+  window.hookeHome = window.hookeHome || {};
+  window.hookeHome.workspace = { cellAt: (i) => { const cb = section.querySelector('canvas.art').getBoundingClientRect(); const [x, y] = toScreen(P(cells[i]).add(new THREE.Vector3(0, layers[0].g.position.y, 0)), stack, camera, W, H, v); return [x + cb.left, y + cb.top]; } };
+
+  stage(section, {
+    init: layout,
+    frame(s, dt) {
+      U.time.value = s.t;
+      const here = s.mx > -999, k = 1 - Math.pow(0.94, dt * 60);
+      // held still while a cell is picked, so its readout can be read; otherwise the pointer turns and opens the stack
+      const wantGap = here ? (narrow ? 0.2 : 0.24) + clamp(1 - s.my / H, 0, 1) * (narrow ? 0.26 : 0.36) : (narrow ? 0.32 : 0.42) + Math.sin(s.t * 0.6) * 0.05;
+      const wantYaw = here ? -1.0 + (s.mx / W) * 1.3 : -0.35 + Math.sin(s.t * 0.15) * 0.35;
+      if (picked < 0) { setGap(gap + (wantGap - gap) * k); yaw += (wantYaw - yaw) * k; }
+      stack.rotation.y = yaw; stack.updateMatrixWorld(true);
+      // which cell is pointed at: the nearest drawn cell on any layer, found again when the pointer moves
+      const key = `${Math.round(s.mx)},${Math.round(s.my)}`;
+      if (here && key !== lastPickAt) {
+        lastPickAt = key; let best = -1, bd = 18 * 18;
+        for (let l = 0; l < layers.length; l++) {
+          const y = layers[l].g.position.y;
+          for (let i = 0; i < N; i += 1) {
+            v.copy(P(cells[i])); v.y = y; v.applyMatrix4(stack.matrixWorld).project(camera);
+            const dx = (v.x + 1) / 2 * W - s.mx, dy = (1 - v.y) / 2 * H - s.my, d = dx * dx + dy * dy;
+            if (d < bd) { bd = d; best = i; }
           }
-          if (ly.draw === 'outline' || ly.draw === 'ticks' || ly.draw === 'bars') ctx.stroke();
-          ctx.globalCompositeOperation = 'source-over';
-          const lx = cx + 1.75 * S + G.padX;
-          ctx.textAlign = 'left'; ctx.font = '600 12px Inter, system-ui'; ctx.fillStyle = hexA(ly.col, 0.9); ctx.fillText(ly.name, lx, oy);
-          ctx.font = '10px Inter, system-ui'; ctx.fillStyle = 'rgba(140,146,170,0.85)';
-          ctx.fillText(G.narrow ? (ly.where || ly.sub) : `${ly.sub}${ly.where ? ` · ${ly.where}` : ''}`, lx, oy + 14);
-          ctx.strokeStyle = hexA(ly.col, 0.18); ctx.beginPath(); ctx.moveTo(ox + 1.75 * S, oy); ctx.lineTo(lx - 4, oy - 4); ctx.stroke();
         }
-        if (pick === null) { box.style.display = 'none'; return; }
-        const c = cells[pick], pts = LAYERS.map((_, k) => proj(c.x, c.y, k));
-        ctx.strokeStyle = 'rgba(255,241,214,0.7)'; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(...pts[0]); ctx.lineTo(...pts[n - 1]); ctx.stroke(); ctx.setLineDash([]);
-        pts.forEach(([x, y], k) => { ctx.strokeStyle = hexA(LAYERS[k].col, 0.95); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(x, y, 7, 7 * TILT * 1.6, 0, 0, TAU); ctx.stroke(); });
-        ctx.lineWidth = 1;
-        const m = plate && plate[pick], seg = names['cellpose-sam'].name;
-        box.innerHTML = `<b>One cell, through every lens</b><br><span class="who">${seg}</span> outlined it` + (m
-          ? `<br>area ${m.area} px · roundness ${num(m.round)} · elongation ${num(m.elong)}${m.edge ? '<br>cut by the edge of the view' : ''}<br><span class="dim">Sizes in pixels: no scale was set.</span>` : '');
-        box.style.display = 'block';
-        // Beside the pointer, kept inside the chapter and off the words.
-        const cv = section.querySelector('canvas.art'), ox = cv.offsetLeft, oy = cv.offsetTop, bw = box.offsetWidth, bh = box.offsetHeight;
-        let bx = s.mx + 18 + bw > s.W - 8 ? s.mx - 18 - bw : s.mx + 18, by = clamp(s.my + 14, 8, s.H - bh - 8);
-        bx = clamp(bx, 8, s.W - bw - 8);
-        const wr = { l: words.offsetLeft - ox, t: words.offsetTop - oy, r: words.offsetLeft - ox + words.offsetWidth, b: words.offsetTop - oy + words.offsetHeight };
-        if (bx < wr.r && bx + bw > wr.l && by < wr.b && by + bh > wr.t) by = wr.b + 8;
-        box.style.left = `${ox + bx}px`; box.style.top = `${oy + by}px`;
-      },
-    });
-  };
-  loadSky().then(start, () => artFailed(section));
+        picked = best;
+      } else if (!here) { picked = -1; lastPickAt = ''; }
+      const B = beadGeo.attributes;
+      if (picked >= 0) {
+        const pts = layers.map((l) => P(cells[picked]).add(new THREE.Vector3(0, l.g.position.y, 0)).applyMatrix4(stack.matrixWorld));
+        thread.geometry.setFromPoints([pts[0], pts[pts.length - 1]]); thread.computeLineDistances(); thread.material.opacity = 0.8;
+        pts.forEach((p, i) => { B.position.setXYZ(i, p.x, p.y, p.z); B.start.setXYZ(i, p.x, p.y, p.z); const c = layers[i].col; B.color.setXYZ(i, c.r, c.g, c.b); B.tint.setXYZ(i, c.r, c.g, c.b); B.size.setX(i, 70); B.lit.setX(i, 1); B.seed.setX(i, 0); });
+        const [x, y] = toScreen(pts[pts.length - 1], null, camera, W, H, v);
+        pick.style.display = 'block';
+        pick.innerHTML = `<b>One cell, through every lens</b>${lenses.map((l, i) => `<span style="color:#${layers[i].col.getHexString()}">${l.name}</span>`).join(' · ')}`;
+        const pw = pick.offsetWidth;
+        pick.style.left = `${clamp(x + 18, 8, W - pw - 8)}px`; pick.style.top = `${clamp(y - 70, 8, H - 120) + s.canvas.offsetTop}px`;
+      } else { thread.material.opacity = 0; for (let i = 0; i < layers.length; i++) B.size.setX(i, 0); pick.style.display = 'none'; }
+      for (const key2 of ['position', 'start', 'color', 'tint', 'size', 'lit']) B[key2].needsUpdate = true;
+      // each layer's name at its right edge, kept apart
+      const items = layers.map((l, i) => { const [x, y] = toScreen(new THREE.Vector3(1.32, l.g.position.y, 0), null, camera, W, H, v); return { l, x: x + l.el.offsetWidth / 2 + 6, y: y + 8 + s.canvas.offsetTop, w: l.el.offsetWidth, h: l.el.offsetHeight }; });
+      items.sort((a, b) => b.y - a.y); keepApart(items);
+      for (const it of items) it.l.el.style.transform = `translate(${clamp(it.left, 4, W - it.w - 4)}px, ${it.top}px)`;
+      composer.render(dt);
+    },
+  });
 }

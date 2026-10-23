@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hooke: ask once, and every model works on it</title>
-<meta name="description" content="Hooke is an open-source research workspace for microscopy: ask once and its researchers choose, run and check the models on your Mac and in the cloud.">
+<title>Hooke: parallel researchers for scientific data</title>
+<meta name="description" content="Hooke: parallel researchers for scientific data. Stack open-source models across long-horizon tasks, on your Mac and in the cloud at once. For educators, researchers and explorers.">
 <meta name="theme-color" content="#04050b">
 <meta property="og:title" content="Hooke">
-<meta property="og:description" content="Ask once. It picks the models.">
+<meta property="og:description" content="Parallel researchers for scientific data. Stack open-source models across long-horizon tasks, on your Mac and in the cloud at once.">
 <meta property="og:image" content="https://hookeui.org/media/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -19,6 +19,9 @@
 <link rel="preload" href="fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="home/home.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<link rel="modulepreload" href="vendor/three.module.min.js">
+<link rel="preload" href="media/sky.json" as="fetch" crossorigin>
 <noscript><style>.chapter .still { display: block; } .chapter .art { display: none; }</style></noscript>
 </head>
 <body>
@@ -38,15 +41,17 @@
 </header>
 
 <main id="top">
-  <section class="chapter" id="ask" aria-label="Ask once">
+  <section class="chapter first" id="ask" aria-label="Parallel researchers for scientific data">
     <canvas class="art" aria-hidden="true"></canvas>
-    <div class="ask-q" id="ask-q"></div>
-    <div class="ask-a" id="ask-a"></div>
-    <img class="still" src="media/home-ask.jpg" alt="A question typed in plain words, answered by a plan of models." width="1920" height="1080" loading="lazy">
+    <div class="first-labels" aria-hidden="true"></div>
+    <div class="ask-q" id="ask-q" aria-hidden="true"><span class="k">Your question</span><span class="t"></span><span class="s"></span></div>
+    <div class="first-spec" aria-hidden="true"><i></i>Live specimen · plant stem · 1,523 cells</div>
+    <div class="grain" aria-hidden="true"></div>
+    <img class="still" src="media/home-ask.jpg" alt="HookeUI's workspace with a live specimen, a question on it and the open-source models it stacks above." width="1440" height="900" loading="lazy">
     <div class="words">
-      <p class="eyebrow">Hooke · open-source research workspace for microscopy</p>
-      <h1>Ask once.<br>It picks the models.</h1>
-      <p>Ask about your specimen in plain words. Hooke's researchers choose the models, run them on your Mac and in the cloud at once, and hand back results you can check and repeat.</p>
+      <p class="eyebrow">Hooke · open source</p>
+      <h1>Parallel researchers for scientific data.</h1>
+      <p>Stack open-source models across long-horizon tasks, on your Mac and in the cloud at once. <em>For educators, researchers and explorers.</em></p>
       <div class="actions">
         <a class="button primary" href="download.html" aria-describedby="dl-note">Download for Mac</a>
         <a class="button ghost" href="#researchers">See it work ↓</a>
@@ -57,20 +62,20 @@
 
   <section class="chapter" id="researchers" aria-label="Researchers">
     <canvas class="art" aria-hidden="true"></canvas>
-    <img class="still" src="media/home-researchers.jpg" alt="Many specimens, each worked on by models on a Mac (gold) and in the cloud (blue)." width="1920" height="1080" loading="lazy">
+    <img class="still" src="media/home-researchers.jpg" alt="Many specimens, each worked on by models on a Mac (gold) and in the cloud (blue)." width="1440" height="900" loading="lazy">
     <div class="words">
-      <h2>A staff of researchers for every dataset.</h2>
-      <p>Hundreds of specimens, every model you choose, working on your Mac and in the cloud together.</p>
+      <h2>Run a whole lab in parallel.</h2>
+      <p>Researchers fan out across every specimen in your dataset at once, on your Mac and in the cloud, and keep going on tasks that take hours.</p>
     </div>
   </section>
 
   <section class="chapter" id="workspace" aria-label="Workspace">
     <canvas class="art" aria-hidden="true"></canvas>
     <div class="ws-pick" id="ws-pick"></div>
-    <img class="still" src="media/home-workspace.jpg" alt="One specimen image with each model's result stacked and aligned on it." width="1920" height="1080" loading="lazy">
+    <img class="still" src="media/home-workspace.jpg" alt="One specimen image with each model's result stacked and aligned on it." width="1440" height="900" loading="lazy">
     <div class="words">
-      <h2>One image.<br>Every lens, aligned.</h2>
-      <p>Hooke runs models side by side on the same specimen and keeps every result lined up, named and repeatable.</p>
+      <h2>Every model's answer, on the same specimen.</h2>
+      <p>Results line up layer on layer, each named with the model and settings that made it, so anyone can check and repeat them.</p>
     </div>
   </section>
 
@@ -78,10 +83,10 @@
     <canvas class="art" aria-hidden="true"></canvas>
     <div class="cap-lens" id="cap-lens"></div>
     <div class="cap-status" id="cap-status" aria-live="polite"></div>
-    <img class="still" src="media/home-capabilities.jpg" alt="Models arranged around one specimen, each switched on or off." width="1920" height="1080" loading="lazy">
+    <img class="still" src="media/home-capabilities.jpg" alt="Models arranged around one specimen, each switched on or off." width="1440" height="900" loading="lazy">
     <div class="words">
-      <h2>Point every model at it.</h2>
-      <p>Models and algorithms from the people who made them, on your Mac and in the cloud, all at once. Switch them on and off; ask about any spot.</p>
+      <h2>The open-source models science runs on, one click away.</h2>
+      <p>Segmentation, tracking, classification and Fiji, beside the best cloud models. Switch them on, stack them, and ask about any spot.</p>
     </div>
   </section>
 
