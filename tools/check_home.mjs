@@ -227,7 +227,27 @@ async function askCycles(browser) {
   });
 }
 
-const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, askCycles };
+async function askNoOverlap(browser) {
+  for (const [w, h] of [[1440, 900], [390, 844]]) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      await page.goto(`${BASE}/`);
+      await page.waitForTimeout(9500);
+      const r = await page.evaluate(() => {
+        const box = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+        const words = box(document.querySelector('#ask .words'));
+        const hit = (a) => a.l < words.r && a.r > words.l && a.t < words.b && a.b > words.t;
+        const q = box(document.getElementById('ask-q')), a = box(document.getElementById('ask-a'));
+        return { qHit: hit(q), aHit: hit(a), aBottom: a.b, aText: document.getElementById('ask-a').textContent.length };
+      });
+      if (!r.aText) throw new Error(`${w}x${h}: the answer is not typed after 9.5 s`);
+      if (r.qHit) throw new Error(`${w}x${h}: #ask-q overlaps .words`);
+      if (r.aHit) throw new Error(`${w}x${h}: #ask-a overlaps .words`);
+      if (w === 390 && r.aBottom > h) throw new Error(`${w}x${h}: #ask-a ends at ${r.aBottom}, below the ${h}px screen`);
+    });
+  }
+}
+
+const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, askCycles, askNoOverlap };
 
 const names = process.argv.slice(2);
 const unknown = names.filter((n) => !CHECKS[n]);

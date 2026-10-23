@@ -1,5 +1,7 @@
 /* The home page: four full-screen chapters, then the plate and the end. */
 html { background: #04050b; }
+/* The top bar overlays chapter 1 so it fills the first screen (the bar is 60px plus its 1px border). */
+body:has(#ask) .top { margin-bottom: -61px; }
 .chapter { position: relative; height: 100svh; overflow: hidden; background: #04050b; color: #f3efe7; }
 .chapter .art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .chapter .still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
@@ -42,7 +44,6 @@ html { background: #04050b; }
 #ask-a { text-align: center; font-size: clamp(11px, 1vw, 15px); line-height: 1.45; color: #dfe2ee; max-width: 26vw; pointer-events: none; }
 #ask-a::before { content: "You get"; display: block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #6d7390; margin-bottom: .4em; }
 @media (max-width: 760px) {
-  #ask .words { padding-top: 32px; }
   #ask-q { max-width: none; font-size: 13px; padding: .5em .8em; min-height: 0; }
   #ask-a { max-width: calc(100% - 16px); font-size: 12px; line-height: 1.35; }
 }
