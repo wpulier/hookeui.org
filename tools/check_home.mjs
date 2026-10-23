@@ -107,7 +107,7 @@ async function corkPlate(browser) {
 }
 
 // Chapters whose art code exists. A later task adds its chapter's id here.
-const ART = ['ask', 'researchers'];
+const ART = ['ask', 'researchers', 'workspace'];
 const frames = (page, id = 'researchers') => page.$eval(`#${id} canvas.art`, (c) => Number(c.dataset.frames || 0));
 const toView = (page, id) => page.evaluate((i) => document.getElementById(i).scrollIntoView(), id);
 
@@ -247,7 +247,54 @@ async function askNoOverlap(browser) {
   }
 }
 
-const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, askCycles, askNoOverlap };
+// Chapter 3: pointing at a cell reads its real measurements from plate.json, and nothing invented.
+const FORBIDDEN = ['BioCLIP', 'Gemini', 'Trackastra followed', 'Fiji measured'];
+async function pickCell(page, i = 700) {
+  await toView(page, 'workspace');
+  await page.waitForTimeout(1200);
+  await page.waitForFunction(() => window.hookeHome && window.hookeHome.workspace);
+  // The stack turns toward the pointer until a cell is held, so aim again until the cell stops moving under it.
+  for (let k = 0; k < 20; k++) {
+    const [x, y] = await page.evaluate((n) => window.hookeHome.workspace.cellAt(n), i);
+    await page.mouse.move(x, y, { steps: 4 });
+    await page.waitForTimeout(300);
+    const [x2, y2] = await page.evaluate((n) => window.hookeHome.workspace.cellAt(n), i);
+    if (Math.hypot(x2 - x, y2 - y) < 0.5) break;
+  }
+  return page.locator('#ws-pick');
+}
+async function workspaceReadoutCheck(page) {
+  const plate = await (await fetch(`${BASE}/media/plate.json`)).json();
+  const area = plate.cells[700][1];
+  const pick = await pickCell(page);
+  if (!(await pick.isVisible())) throw new Error('#ws-pick is not visible after pointing at cell 700');
+  const t = await pick.innerText();
+  if (!t.includes('Cellpose-SAM')) throw new Error(`readout lacks Cellpose-SAM: ${t}`);
+  if (!t.includes(`${area} px`)) throw new Error(`readout lacks "${area} px": ${t}`);
+  for (const f of FORBIDDEN) if (t.includes(f)) throw new Error(`readout contains "${f}": ${t}`);
+  if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+}
+async function workspaceReadout(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => { await page.goto(`${BASE}/`); await workspaceReadoutCheck(page); });
+}
+async function workspaceReadoutStill(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => { await page.goto(`${BASE}/`); await workspaceReadoutCheck(page); }, { reducedMotion: 'reduce' });
+}
+async function workspaceNoPlate(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.route('**/media/plate.json', (r) => r.abort());
+    await page.goto(`${BASE}/`);
+    const pick = await pickCell(page);
+    if (await page.evaluate(() => document.getElementById('workspace').classList.contains('no-art'))) throw new Error('the chapter fell back to its still');
+    if (!(await pick.isVisible())) throw new Error('#ws-pick is not visible without plate.json');
+    const t = await pick.innerText();
+    if (!t.includes('Cellpose-SAM outlined it')) throw new Error(`readout: ${t}`);
+    if (/px|roundness|elongation/.test(t)) throw new Error(`measurements shown without plate.json: ${t}`);
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  });
+}
+
+const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, askCycles, askNoOverlap, workspaceReadout, workspaceReadoutStill, workspaceNoPlate };
 
 const names = process.argv.slice(2);
 const unknown = names.filter((n) => !CHECKS[n]);

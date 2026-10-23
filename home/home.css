@@ -48,3 +48,10 @@ body:has(#ask) .top { margin-bottom: -61px; }
   #ask-a { max-width: calc(100% - 16px); font-size: 12px; line-height: 1.35; }
 }
 .chapter.no-art :is(#ask-q, #ask-a) { display: none; }
+
+/* Chapter 3: the readout for the pointed-at cell. */
+.ws-pick { display: none; max-width: min(300px, calc(100% - 16px)); font-size: 11px; line-height: 1.55; color: #b9bdcc; background: rgba(8, 10, 20, 0.86); border: 1px solid #22273a; border-radius: 8px; padding: 8px 11px; pointer-events: none; }
+.ws-pick b { font-weight: 600; color: #f3efe7; }
+.ws-pick .who { color: #f2c46d; }
+.ws-pick .dim { color: #6d7390; }
+.chapter.no-art .ws-pick { display: none !important; }

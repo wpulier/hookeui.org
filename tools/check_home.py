@@ -79,8 +79,33 @@ def entries_real(args):
     return failures
 
 
+def plate_matches_sky(args):
+    """Cell i of media/plate.json is the same cell as stars[i] of media/sky.json, so the readout can join them by index."""
+    import json
+    import re
+    plate = json.loads((ROOT / "media" / "plate.json").read_text(encoding="utf-8"))
+    sky = json.loads((ROOT / "media" / "sky.json").read_text(encoding="utf-8"))
+    cells, stars = plate["cells"], sky["stars"]
+    if len(cells) != 1523 or len(stars) != 1523:
+        return [f"plate has {len(cells)} cells and sky has {len(stars)}, expected 1,523 each"]
+    cx, cy, r = plate["disc"]
+    ok = 0
+    for cell, star in zip(cells, stars):
+        pts = [(float(a), float(b)) for a, b in re.findall(r"(-?[\d.]+)\s+(-?[\d.]+)", cell[0])]
+        if not pts:
+            continue
+        mx = sum(p[0] for p in pts) / len(pts)
+        my = sum(p[1] for p in pts) / len(pts)
+        if abs((mx - cx) / r - star[0]) <= 0.03 and abs(-(my - cy) / r - star[1]) <= 0.03:
+            ok += 1
+    if ok < 0.95 * len(cells):
+        return [f"only {ok} of {len(cells)} plate cells sit within 0.03 of the same sky cell"]
+    return []
+
+
 CHECKS = {
     "links_resolve": links_resolve,
+    "plate_matches_sky": plate_matches_sky,
     "entries_real": entries_real,
 }
 
