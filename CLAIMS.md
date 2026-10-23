@@ -6,6 +6,28 @@ app (its own data folder, no phone) built from `main` at 7d453daa, playing the o
 `~/MicroscopeMind/footage/`. Nothing in any clip was staged, edited into the interface or sped up; two clips are
 shortened by cuts, and say so.
 
+## Home page (index.html)
+
+The hosted side (cloud runs, researchers over datasets on your Mac and in the cloud at once) is declared as existing by
+Will, 2026-10-23; its evidence is the hosted agent-access spec and tickets, `docs/planning/hooke-hosted-agent-access/README.md`.
+
+| Claim on the page | Evidence |
+|---|---|
+| Open-source research workspace for microscopy | Go-live checklist D11 (drafted, not applied); README "Licence"; `docs/planning/open-source-successor/charter.md` |
+| Ask about your specimen in plain words; researchers choose the models, run them on your Mac and in the cloud at once, and hand back results you can check and repeat | `services/orchestrator/brain/AGENTS.md` and `brain/toolbox/` (a question becomes tool runs); `services/orchestrator/research/AGENTS.md`; cloud side `docs/planning/hooke-hosted-agent-access/README.md`, "declared as existing by Will, 2026-10-23"; repeatable: Evidence executions (`evidence.py`), `made_with.py` |
+| Each question becomes a plan: which models and algorithms to run, on your Mac or in the cloud, and how to check them against each other | `services/orchestrator/brain/AGENTS.md`, `brain/toolbox/`; `services/orchestrator/research/AGENTS.md`; `services/orchestrator/AGENTS.md` "Options, not replacements"; cloud as above |
+| Free, for Macs with Apple silicon and macOS 14 or later | As the story page's row of the same text |
+| A staff of researchers for every dataset; hundreds of specimens, every model you choose, on your Mac and in the cloud together | `services/orchestrator/research/AGENTS.md` (efforts, hands, missions); `docs/planning/hooke-hosted-agent-access/README.md`; "declared as existing by Will, 2026-10-23" |
+| Hooke runs models side by side on the same specimen and keeps every result lined up, named and repeatable | `services/orchestrator/AGENTS.md` "Options, not replacements"; Activity `ToolRun.models`; the "Results anyone can repeat" evidence (`evidence.py`, `made_with.py`) |
+| Models and algorithms from the people who made them, on your Mac and in the cloud; switch them on and off | `catalog/models/*/model.toml` (`credit`, `runs` = this-mac, cpu or cloud); AGENTS.md "Turn on" sheet; cloud as above |
+| Ask about any spot | `services/orchestrator/brain/AGENTS.md` (pointing, outlines, "the outline check"); `docs/architecture/seeing-and-acting.md` |
+| The cork section and the end (catalog, "The sky keeps filling", install) | The same text and evidence as the story page: its rows below |
+
+## Story page (story.html)
+
+These rows also cover the same cork section ("In 1665, Robert Hooke ..."), the catalog ("Meet your staff"), "The sky
+keeps filling" and "Come and look" where they appear on index.html. They are not repeated above.
+
 | Claim on the page | Evidence |
 |---|---|
 | Free and open source; planned licence Apache-2.0 with DCO, being finalised | Go-live checklist D11 (drafted, not applied); `docs/contributing/DCO.txt`; README "Licence" |

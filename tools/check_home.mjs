@@ -29,7 +29,84 @@ async function storyRenders(browser) {
   });
 }
 
-const CHECKS = { storyRenders };
+const IDS = ['ask', 'researchers', 'workspace', 'capabilities'];
+
+async function homeChapters(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await page.waitForTimeout(500);
+    const ids = await page.$$eval('section.chapter', (els) => els.map((e) => e.id));
+    if (ids.join() !== IDS.join()) throw new Error(`chapters are [${ids}], expected [${IDS}]`);
+    const hs = await page.$$eval('section.chapter', (els) => els.map((e) => e.getBoundingClientRect().height));
+    hs.forEach((h, i) => {
+      if (Math.abs(h - 900) > 2) throw new Error(`${IDS[i]} is ${h}px tall, expected 900`);
+    });
+    const nav = await page.$$eval('header.top nav a', (as) => as.map((a) => `${a.textContent.trim()} → ${a.getAttribute('href')}`));
+    const want = ['Story → story.html', 'Catalog → #models', 'Download → download.html'];
+    if (nav.join('|') !== want.join('|')) throw new Error(`nav is [${nav.join('|')}]`);
+    for (const id of ['models', 'install']) {
+      if ((await page.locator(`#${id}`).count()) !== 1) throw new Error(`no #${id}`);
+    }
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  });
+}
+
+async function phoneLayout(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await page.waitForTimeout(500);
+    const w = await page.evaluate(() => document.documentElement.scrollWidth);
+    if (w > 390) throw new Error(`page is ${w}px wide at 390`);
+    for (const id of IDS) {
+      const r = await page.evaluate((i) => {
+        const c = document.getElementById(i);
+        return [c.querySelector('.words').getBoundingClientRect().bottom, c.querySelector('canvas.art').getBoundingClientRect().top];
+      }, id);
+      if (r[0] > r[1] + 0.5) throw new Error(`${id}: words end at ${r[0]} but the canvas starts at ${r[1]}`);
+    }
+  });
+}
+
+async function oldAnchors(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/#see`);
+    await page.waitForTimeout(800);
+    if (!page.url().endsWith('story.html#see')) throw new Error(`#see went to ${page.url()}`);
+  });
+  for (const id of ['open', 'models']) {
+    await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+      await page.goto(`${BASE}/#${id}`);
+      await page.waitForTimeout(1200);
+      const r = await page.evaluate((i) => { const b = document.getElementById(i).getBoundingClientRect(); return [b.top, b.bottom, innerHeight]; }, id);
+      if (!(r[0] < r[2] && r[1] > 0)) throw new Error(`#${id} is not in view (top ${r[0]}, bottom ${r[1]})`);
+    });
+  }
+}
+
+async function corkPlate(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await page.evaluate(() => document.getElementById('open').scrollIntoView());
+    await page.waitForTimeout(3000);
+    const h2 = (await page.locator('#open h2').innerText()).trim();
+    if (!h2.startsWith('In 1665, Robert Hooke')) throw new Error(`h2 is "${h2}"`);
+    // The plate draws only the cells inside its disc (site.js), so 941 of the 1,523, as on story.html.
+    const n = await page.locator('#open .plate-ink path').count();
+    if (n !== 941) throw new Error(`plate has ${n} paths, expected 941 (the cells inside the disc)`);
+    const read = page.locator('#open .plate-read');
+    const before = (await read.innerText()).trim();
+    if (before !== '1,523 cells. Point at one.') throw new Error(`plate-read starts "${before}"`);
+    const b = await page.locator('#open .plate-disc').boundingBox();
+    await page.mouse.move(b.x + b.width / 2 - 20, b.y + b.height / 2 - 20);
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 5 });
+    await page.waitForTimeout(500);
+    const after = (await read.innerText()).trim();
+    if (after === before) throw new Error('pointing at the plate did not change .plate-read');
+    if (!(await page.locator('header.top').evaluate((e) => e.classList.contains('on-sky')))) throw new Error('header lost on-sky');
+  });
+}
+
+const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate };
 
 const names = process.argv.slice(2);
 const unknown = names.filter((n) => !CHECKS[n]);

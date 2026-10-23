@@ -35,7 +35,7 @@
 // The bar is dark while night is under it: the hero, the dark top of the dawn, the night the dusk becomes, and the end.
 (function () {
   var bar = document.querySelector('.top');
-  if (!bar) return;
+  if (!bar || bar.hasAttribute('data-always-dark')) return;
   // [element, where its dark part starts, where it ends], as fractions of its height (or pixels).
   var dark = [['.sky', 0, 1], ['.dawn', 0, 0.62], ['.dusk', 270, 1], ['.night-end', 0, 1], ['.foot', 0, 1]]
     .map(function (d) { return [document.querySelector(d[0]), d[1], d[2]]; }).filter(function (d) { return d[0]; });

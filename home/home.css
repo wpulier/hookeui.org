@@ -1,0 +1,37 @@
+/* The home page: four full-screen chapters, then the plate and the end. */
+html { background: #04050b; }
+.chapter { position: relative; height: 100svh; overflow: hidden; background: #04050b; color: #f3efe7; }
+.chapter .art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.chapter .still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+.chapter.no-art .still { display: block; }
+.chapter.no-art .art { display: none; }
+.chapter::before, .chapter::after { content: ""; position: absolute; left: 0; right: 0; height: 12vh; z-index: 1; pointer-events: none; }
+.chapter::before { top: 0; background: linear-gradient(180deg, #04050b, rgba(4, 5, 11, 0)); }
+.chapter::after { bottom: 0; background: linear-gradient(0deg, #04050b, rgba(4, 5, 11, 0)); }
+.chapter > :is(#ask-q, #ask-a, #ws-pick, #cap-lens, #cap-status) { position: absolute; z-index: 2; }
+
+.words { position: absolute; z-index: 2; left: 5vw; top: 13vh; max-width: 34vw; }
+#researchers .words { top: auto; bottom: 11vh; }
+.words h1, .words h2 { color: #f3efe7; font-size: clamp(24px, 3.6vw, 60px); line-height: 1.04; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
+.words p { color: #b9bdcc; margin: 1.6vh 0 0; font-size: clamp(14px, 1.2vw, 18px); line-height: 1.45; max-width: 36em; }
+.words .eyebrow { color: #8a90a6; font-size: clamp(11px, .85vw, 13px); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 2vh; }
+.words .note { color: #8a90a6; font-size: clamp(12px, .9vw, 14px); }
+.words .actions { margin-top: 2.4vh; }
+.words .button { color: #f3efe7; background: rgba(243, 239, 231, 0.04); border-color: rgba(243, 239, 231, 0.22); }
+.words .button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+.words .button.ghost { background: transparent; }
+.words .button:hover { background: rgba(243, 239, 231, 0.1); }
+.words .button.primary:hover { background: var(--accent-hover); }
+.words a:focus-visible { outline-color: rgba(243, 239, 231, 0.7); }
+
+.end { background: #04050b; }
+
+@media (max-width: 760px) {
+  .chapter { display: flex; flex-direction: column; }
+  .words, #researchers .words { position: static; max-width: none; padding: 80px 16px 16px; }
+  .words, #researchers .words { order: -1; }
+  .words p { font-size: 15px; }
+  .chapter .art { position: relative; inset: auto; flex: 1; min-height: 0; height: auto; }
+  .chapter .still { position: absolute; inset: auto 0 0 0; height: auto; }
+  .chapter.no-art .still { position: relative; flex: 1; min-height: 0; height: 0; }
+}
