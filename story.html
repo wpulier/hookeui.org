@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hooke: the story</title>
+<meta name="description" content="Hooke is an open-source platform for finding, turning on and running microscopy and bioimage-analysis models on the Mac, with no terminal.">
+<meta name="theme-color" content="#04050b">
+<meta property="og:title" content="Hooke">
+<meta property="og:description" content="Every observer, with a staff of researchers and models, ready at the speed of technology.">
+<meta property="og:image" content="https://hookeui.org/media/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://hookeui.org/story.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<noscript><style>.sky { background-image: url("media/hero-scene.jpg"); } @media (max-width: 999px) { .sky { background-image: none; } .sky-stage { background-image: url("media/hero-scene-phone.jpg"); } }</style></noscript>
+<link rel="modulepreload" href="vendor/three.module.min.js">
+<link rel="modulepreload" href="hero-scene.js">
+<link rel="preload" href="media/sky.json" as="fetch" crossorigin>
+<link rel="preload" href="media/you.json" as="fetch" crossorigin>
+<link rel="preload" href="media/sky-bg.jpg" as="image" crossorigin>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./" aria-label="Hooke home">
+      <img src="favicon.svg" alt="" width="24" height="24">
+      <span>Hooke</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#open">Open source</a>
+      <a href="#see">See it work</a>
+      <a href="#models">Catalog</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/wpulier/hookeui.org">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero sky" aria-labelledby="hero-title">
+    <div class="sky-stage">
+      <canvas aria-hidden="true"></canvas>
+      <ul class="sky-labels" aria-label="Some entries in Hooke’s catalog"></ul>
+    </div>
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <h1 id="hero-title">Hooke</h1>
+        <p class="tagline">Every observer, with a staff of researchers and models, ready at the speed of technology.</p>
+        <p class="lede">A microscopy workspace for the Mac: open your microscope images and recordings, outline and measure what is in them with models that run on your Mac, and keep each result with the model and settings that made it.</p>
+        <p class="lede">Open source, for the community. To discover new worlds hidden in the existing.</p>
+        <div class="actions">
+          <a class="button primary" href="download.html" aria-describedby="dl-note">Download for Mac</a>
+          <a class="button" href="download.html#limits">Current limits</a>
+        </div>
+        <p class="note" id="dl-note">Free, for Macs with Apple silicon and macOS 14 or later. Trying the bundled example needs no account, key or camera.</p>
+      </div>
+    </div>
+    <p class="sky-caption">The sky is the 1,523 cells Cellpose-SAM found in a real stained plant stem, each in its stain’s colour. The names are entries in Hooke’s catalog. “You” is made from a USDA photograph of Ruth Colvin Starrett, a cytologist who studied plant cells (Smithsonian Institution Archives).</p>
+  </section>
+
+  <section class="dawn" aria-labelledby="dawn-title">
+    <div class="wrap dawn-inner">
+      <h2 id="dawn-title">Every week, someone teaches a model to see something new.</h2>
+      <ol class="beats">
+        <li>
+          <h3>It’s a click from your microscope.</h3>
+          <p>Find it in the catalog or paste its link. Download it, add a key or turn it on: no terminal, nothing to break.</p>
+        </li>
+        <li>
+          <h3>It works while you watch.</h3>
+          <p>Outline, measure and follow on your live camera, recordings and images, with the model named on every step.</p>
+        </li>
+        <li>
+          <h3>You decide what it means.</h3>
+          <p>The app measures, the models propose, and only you confirm. Then share it back, so the next observer starts where you left off.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="plate-sec" id="open" aria-labelledby="open-title">
+    <div class="wrap">
+      <div class="plate-grid">
+        <div class="plate-copy">
+          <h2 id="open-title">In 1665, Robert Hooke drew a slice of cork and called its little boxes cells.</h2>
+          <p class="say">He published his drawings, so anyone with a lens could look for themselves. We build Hooke in the open for the same reason.</p>
+          <p>This is a plant stem, today. Cellpose-SAM outlined all 1,523 of its cells in about 20 seconds on a Mac, and the app measured every one. Point at a cell to see what it found.</p>
+        </div>
+        <figure class="plate">
+          <div class="plate-disc">
+            <svg class="plate-ink" role="img" aria-labelledby="plate-cap" focusable="false"></svg>
+          </div>
+          <p class="plate-read" aria-live="polite">1,523 cells. Point at one.</p>
+          <figcaption id="plate-cap">The cells of a stained plant stem, as Cellpose-SAM outlined them, drawn from the app’s saved result. Sizes are in pixels: no scale was set.</figcaption>
+        </figure>
+      </div>
+
+      <ul class="vows" aria-label="Open source">
+        <li>
+          <h3>Free, and yours to change</h3>
+          <p>HookeUI’s own code will be Apache 2.0, with a sign-off on every contribution. The licence is being finalised for the first release.</p>
+        </li>
+        <li>
+          <h3>Results anyone can repeat</h3>
+          <p>Every result keeps the model, version and settings that made it. Share a picture and it names them, so anyone can turn on the same ones and look again.</p>
+        </li>
+        <li>
+          <h3>Made by the people who use it</h3>
+          <p>Add a model, an example or a fix. Share it as a file, or publish it to the reviewed catalog for everyone. The forum opens with the first release.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="obs-sec" id="see" aria-labelledby="see-title">
+    <div class="wrap">
+      <div class="obs-head">
+        <h2 id="see-title">Five observations</h2>
+        <p class="say">Hooke numbered his. Ours were made in the app, on footage from a real microscope, with nothing staged or sped up.</p>
+      </div>
+
+      <article class="obs lead">
+        <figure class="frame">
+          <video class="loop" muted loop playsinline preload="none" poster="media/hero.jpg" aria-label="One click outlines and names the pith of a stained plant stem; a question about the cells around it is answered in the chat">
+            <source src="media/hero.mp4" type="video/mp4">
+          </video>
+        </figure>
+        <div class="obs-text">
+          <h3><span class="obs-n">Observation 1.</span> Of the pith of a stem</h3>
+          <p>One click outlines it and names it as a best guess: “pith, Probably”. Ask about the cells around it, and the answer comes in the chat.</p>
+          <p class="caption">Real time, 24 seconds.</p>
+        </div>
+      </article>
+
+      <div class="obs-grid">
+        <article class="obs">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/cells.jpg" aria-label="Cellpose-SAM outlining every cell in a plant stem section">
+              <source src="media/cells.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3><span class="obs-n">Observation 2.</span> Of every cell at once</h3>
+          <p>Ask for the cells, and Cellpose-SAM outlines all 1,523. The app measures each one into a table you can sort and download.</p>
+          <p class="caption">About 20 seconds on an Apple silicon Mac; the clip is shortened while it runs. <a href="media/table.jpg">See the measurements</a>.</p>
+        </article>
+        <article class="obs">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/follow.jpg" aria-label="A sperm cell clicked once, outlined and followed as it swims, with its path drawn">
+              <source src="media/follow.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3><span class="obs-n">Observation 3.</span> Of a swimmer</h3>
+          <p>Click it once. EdgeTAM outlines it, and the outline follows it through the drop, drawing the path it swam.</p>
+          <p class="caption">Sperm wet mount. Its name is a vision model’s best guess, marked “Probably” until you confirm it.</p>
+        </article>
+        <article class="obs">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/motion.jpg" aria-label="Every moving spot tracked over four seconds in a sperm wet mount">
+              <source src="media/motion.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3><span class="obs-n">Observation 4.</span> Of how fast they swim</h3>
+          <p>“How fast are they swimming?” It tracked 527 moving spots for 4 seconds: 153 swimming, at a median 13 pixels a second, in pixels because no scale was set.</p>
+          <p class="caption">Asked earlier, while the slide drifted, it said it couldn’t measure yet, and why.</p>
+        </article>
+        <article class="obs">
+          <figure class="frame">
+            <video class="loop" muted loop playsinline preload="none" poster="media/example.jpg" aria-label="The example walkthrough finding and measuring bright regions in an image of human cells">
+              <source src="media/example.mp4" type="video/mp4">
+            </video>
+          </figure>
+          <h3><span class="obs-n">Observation 5.</span> Of human cells, with nothing to set up</h3>
+          <p>The bundled example opens a real microscope image, finds its bright regions and measures them. No account, key, download or camera.</p>
+          <p class="caption">Human mitosis by David Root, CC0, via scikit-image. A bright region isn’t necessarily one cell.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="dusk" id="models" aria-labelledby="models-title">
+    <div class="wrap">
+      <div class="dusk-head">
+        <h2 id="models-title">Meet your staff.</h2>
+        <p class="say">Behind every name are people who spent years teaching a model to see one thing well. Hooke brings their work a click from your microscope, and names it on every result it helps make.</p>
+      </div>
+
+      <div class="atlas">
+        <section class="figure-col" aria-labelledby="k-models">
+          <svg class="glyph" aria-hidden="true" focusable="false"></svg>
+          <h3 id="k-models">Models</h3>
+          <p class="where">On your Mac</p>
+          <ul>
+            <li><b>Cellpose-SAM</b> Pachitariu, Rariden, Stringer</li>
+            <li><b>micro-sam</b> Archit, Pape et al.</li>
+            <li><b>SAM 3.1</b> Meta AI</li>
+            <li><b>EdgeTAM</b> Meta Reality Labs</li>
+            <li><b>InstanSeg</b> Goldsborough, Bankhead et al.</li>
+            <li><b>Trackastra</b> Gallusser, Weigert</li>
+            <li><b>DINOv3</b> Meta AI</li>
+            <li><b>BioCLIP 2</b> Imageomics Institute</li>
+          </ul>
+        </section>
+        <section class="figure-col" aria-labelledby="k-fiji">
+          <svg class="glyph" aria-hidden="true" focusable="false"></svg>
+          <h3 id="k-fiji">Fiji functions</h3>
+          <p class="where">On your Mac</p>
+          <ul>
+            <li><b>Analyze Particles</b> counts and measures particles</li>
+            <li><b>Gaussian Blur</b> smooths an image</li>
+            <li><b>Subtract Background</b> removes an uneven background</li>
+          </ul>
+          <p class="small">Each runs headless in a pinned Fiji, proven to match the same ImageJ macro.</p>
+        </section>
+        <section class="figure-col" aria-labelledby="k-alg">
+          <svg class="glyph" aria-hidden="true" focusable="false"></svg>
+          <h3 id="k-alg">Algorithms</h3>
+          <p class="where">On your Mac</p>
+          <ul>
+            <li><b>Bright objects</b> Otsu threshold and connected regions</li>
+            <li><b>Spot measure</b> spots and their sizes</li>
+            <li><b>Spot shape</b> how round each spot is</li>
+            <li><b>brainreg</b> whole-brain registration, BrainGlobe</li>
+          </ul>
+        </section>
+        <section class="figure-col" aria-labelledby="k-cloud">
+          <svg class="glyph" aria-hidden="true" focusable="false"></svg>
+          <h3 id="k-cloud">Cloud models and data</h3>
+          <p class="where">With your key, and on your Mac</p>
+          <ul>
+            <li><b>Gemini</b>, <b>GPT</b>, <b>Claude</b> vision and chat</li>
+            <li><b>SAM 3.1</b> hosted</li>
+            <li><b>Allen mouse brain atlas</b> 25 µm</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="filling">
+        <h3>The sky keeps filling.</h3>
+        <p>When someone adds an entry, everyone gets it as a catalog update, with no new app. Add your own from a BioImage Model Zoo or Hugging Face link, drop in a Cellpose model you trained, or have an AI assistant draft its adapter, tried in a sandbox before you use it. Each entry keeps its own licence, shown before you turn it on. Please cite the ones you use.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="night-end" id="install" aria-labelledby="install-title">
+    <div class="wrap install-grid">
+      <div>
+        <h2 id="install-title">Come and look.</h2>
+        <p class="say">Hooke is a signed Mac app for Apple silicon. Install it with Finder; no terminal or developer tools.</p>
+        <p class="small">The example and the local models need no key. Chat, voice and naming use a cloud provider, with your own key.</p>
+      </div>
+      <div>
+        <ol class="steps">
+          <li>Download Hooke and open the disk image.</li>
+          <li>Drag HookeUI into Applications, then open it there.</li>
+          <li>Its first launch prepares the app’s Python and packages (about 350 MB, a few minutes), step by step on screen.</li>
+          <li>Open the bundled example: a real microscope image, its bright regions found and measured on your Mac.</li>
+        </ol>
+        <div class="actions"><a class="button primary" href="download.html">Download for Mac</a></div>
+        <p class="caption">Installation details and current limits are on the download page. The source code is published on GitHub with the first public release.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <p>HookeUI is an independent project by Will Pulier, built with AI coding assistants, and not affiliated with Fiji or ImageJ. It is named after Robert Hooke, whose <cite>Micrographia</cite> (1665) gave us the word “cell”.</p>
+    <p><a href="https://github.com/wpulier/hookeui.org">Website source</a>. No analytics or cookies.</p>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+<script type="module" src="hero-scene.js"></script>
+</body>
+</html>
