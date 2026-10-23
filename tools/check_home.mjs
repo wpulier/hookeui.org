@@ -107,7 +107,7 @@ async function corkPlate(browser) {
 }
 
 // Chapters whose art code exists. A later task adds its chapter's id here.
-const ART = ['researchers'];
+const ART = ['ask', 'researchers'];
 const frames = (page, id = 'researchers') => page.$eval(`#${id} canvas.art`, (c) => Number(c.dataset.frames || 0));
 const toView = (page, id) => page.evaluate((i) => document.getElementById(i).scrollIntoView(), id);
 
@@ -205,7 +205,29 @@ async function dataFailure(browser) {
   });
 }
 
-const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure };
+async function askCycles(browser) {
+  const { readFileSync } = await import('node:fs');
+  const { ask } = JSON.parse(readFileSync(new URL('../home/entries.json', import.meta.url), 'utf8'));
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await page.waitForTimeout(2500);
+    const read = () => page.evaluate(() => [document.getElementById('ask-q').textContent.trim(), document.getElementById('ask').dataset.plan]);
+    const [q0, p0] = await read();
+    if (q0 !== ask[0].q) throw new Error(`#ask-q is "${q0}", expected "${ask[0].q}"`);
+    const want0 = ask[0].plan.map((x) => x[0]).join(',');
+    if (p0 !== want0) throw new Error(`data-plan is "${p0}", expected "${want0}"`);
+    const b = await page.locator('#ask canvas.art').boundingBox();
+    await page.mouse.click(b.x + b.width * 0.7, b.y + b.height * 0.2);
+    await page.waitForTimeout(2500);
+    const [q1, p1] = await read();
+    const want1 = ask[1].plan.map((x) => x[0]).join(',');
+    if (q1 !== ask[1].q) throw new Error(`after a click #ask-q is "${q1}", expected "${ask[1].q}"`);
+    if (p1 !== want1) throw new Error(`after a click data-plan is "${p1}", expected "${want1}"`);
+    if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
+  });
+}
+
+const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, askCycles };
 
 const names = process.argv.slice(2);
 const unknown = names.filter((n) => !CHECKS[n]);

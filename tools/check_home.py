@@ -48,8 +48,40 @@ def links_resolve(args):
     return failures
 
 
+def entries_real(args):
+    """home/entries.json names real catalog entries, with the right Mac/cloud, and every id used is declared."""
+    import json
+    import re
+    if not args.catalog:
+        print("SKIP entries_real (no --catalog)")
+        return []
+    path = ROOT / "home" / "entries.json"
+    if not path.exists():
+        return ["home/entries.json is missing"]
+    data = json.loads(path.read_text(encoding="utf-8"))
+    entries = data.get("entries", {})
+    failures = []
+    for eid, e in entries.items():
+        toml = Path(args.catalog) / eid / "model.toml"
+        if not toml.exists():
+            failures.append(f"{eid}: no {toml}")
+            continue
+        m = re.search(r'^runs\s*=\s*"([^"]*)"', toml.read_text(encoding="utf-8"), re.M)
+        want = "cloud" if m and m.group(1) == "cloud" else "mac"
+        if e.get("where") != want:
+            failures.append(f"{eid}: where is {e.get('where')!r}, catalog runs {m.group(1) if m else None!r} means {want!r}")
+    used = list(data.get("ring", [])) + [l["id"] for l in data.get("lenses", []) if l.get("id")]
+    for q in data.get("ask", []):
+        used += [step[0] for step in q.get("plan", [])]
+    for eid in used:
+        if eid not in entries:
+            failures.append(f"{eid} is used but not in entries")
+    return failures
+
+
 CHECKS = {
     "links_resolve": links_resolve,
+    "entries_real": entries_real,
 }
 
 
