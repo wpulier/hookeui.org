@@ -25,12 +25,14 @@ after each change.
 
    | To change | Edit |
    |---|---|
-   | Words and sections | `index.html` |
+   | Words and sections of the story page | `story.html` |
+   | Words and sections of the home page | `home/` (filled in as the redesign lands) |
+   | How the home page looks and moves | `home/` (filled in as the redesign lands) |
    | How it looks | `style.css` |
    | The plate, the catalog stars, the header | `site.js` |
    | The hero's sky | `hero-scene.js` |
    | Videos and pictures | `media/` |
-3. Look at it on your machine. It has to be served; opening `index.html` as a file won't draw the sky.
+3. Look at it on your machine. It has to be served; opening `story.html` as a file won't draw the sky.
    ```bash
    python3 -m http.server 8000
    ```
@@ -46,6 +48,15 @@ after each change.
 Don't change `CNAME`: it is what points hookeui.org at this site. The scripts in `tools/` rebuild the hero's data from the
 app's saved results. You only need them to change the sky, "You" or the plate; each
 names the Python packages it needs in its first lines.
+
+## Checks
+
+`python3 tools/check_home.py` checks the pages without a browser (every relative link resolves; `--catalog DIR` points at
+the app's `catalog/models`). `node tools/check_home.mjs [check ...]` runs the browser checks (all when none are named)
+against a served copy of the site and prints `PASS name` or `FAIL name: why`. Both exit 1 on any failure. A browser check
+needs the site served (`python3 -m http.server 8000 --bind 127.0.0.1`) and three variables: `BASE` (where it is served,
+e.g. `http://127.0.0.1:8000`), `PLAYWRIGHT` (path to Playwright's `index.mjs`) and `CHROME` (path to a Chrome or Chromium
+executable). To add a check, write one named function and register it in that file's `CHECKS` table.
 
 ## The hero's sky
 
