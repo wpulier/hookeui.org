@@ -108,7 +108,7 @@ async function corkPlate(browser) {
 
 // Chapters whose art code exists. A later task adds its chapter's id here.
 const ART = ['researchers'];
-const frames = (page) => page.$eval('#researchers canvas.art', (c) => Number(c.dataset.frames || 0));
+const frames = (page, id = 'researchers') => page.$eval(`#${id} canvas.art`, (c) => Number(c.dataset.frames || 0));
 const toView = (page, id) => page.evaluate((i) => document.getElementById(i).scrollIntoView(), id);
 
 async function animatesOnlyOnScreen(browser) {
@@ -135,8 +135,36 @@ async function reducedMotion(browser) {
     await page.waitForTimeout(2000);
     const f = await frames(page);
     if (f < 1 || f > 2) throw new Error(`reduced motion drew ${f} frames, expected 1 or 2`);
+    // Moving the pointer across the far edge (outside the pull radius) redraws but must not move the swarm.
+    const snap = () => page.$eval('#researchers canvas.art', (c) => Array.from(c.getContext('2d').getImageData(0, 0, c.width, c.height).data));
+    const b = await page.locator('#researchers canvas.art').boundingBox();
+    const mv = (i) => page.mouse.move(b.x + b.width * 0.5 + (i % 2) * 40, b.y + b.height * 0.5);
+    for (let i = 0; i < 20; i++) await mv(i); // let the fade settle first
+    const a = await snap();
+    for (let i = 0; i < 20; i++) await mv(i);
+    const z = await snap();
+    let max = 0;
+    for (let i = 0; i < a.length; i++) max = Math.max(max, Math.abs(a[i] - z[i]));
+    if (max > 8) throw new Error(`20 pointer moves changed the still by up to ${max}: the swarm moved`);
     if (page.errors.length) throw new Error(`page errors: ${page.errors.join('; ')}`);
   }, { reducedMotion: 'reduce' });
+}
+
+async function tapPersists(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await toView(page, 'researchers');
+    await page.waitForTimeout(500);
+    const b = await page.locator('#researchers canvas.art').boundingBox();
+    await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+    await page.waitForTimeout(300);
+    const p = await page.$eval('#researchers canvas.art', (c) => c.dataset.pointer);
+    if (!p) throw new Error('the tapped point was cleared within 300 ms');
+    await toView(page, 'capabilities');
+    await page.waitForTimeout(500);
+    const q = await page.$eval('#researchers canvas.art', (c) => c.dataset.pointer);
+    if (q) throw new Error(`the tapped point stayed (${q}) after the section left the screen`);
+  }, { hasTouch: true, isMobile: true });
 }
 
 async function touchScroll(browser) {
@@ -177,7 +205,7 @@ async function dataFailure(browser) {
   });
 }
 
-const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, touchScroll, dataFailure };
+const CHECKS = { storyRenders, homeChapters, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure };
 
 const names = process.argv.slice(2);
 const unknown = names.filter((n) => !CHECKS[n]);

@@ -21,9 +21,9 @@ export function startResearchers(section) {
         const top = 64, cols = Math.max(4, Math.round(s.W / 96)), rows = Math.max(4, Math.round((s.H - top) / 96)), cw = s.W / cols, ch = (s.H - top) / rows, d = Math.min(cw, ch) * 0.7;
         const tiles = [];
         for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) tiles.push({ x: (i + 0.5) * cw, y: top + (j + 0.5) * ch, d, rot: rnd(0, TAU), prog: 0, by: null, claimed: false });
-        const agents = [];
-        for (let k = 0; k < 22; k++) agents.push({ x: rnd(0, 40), y: s.H - rnd(0, 40), vx: 0, vy: 0, cloud: false, col: WARM[k % WARM.length], tile: null, orbit: rnd(0, TAU), speed: 0.55 });
-        for (let k = 0; k < 40; k++) agents.push({ x: s.W - rnd(0, 40), y: rnd(0, 40), vx: 0, vy: 0, cloud: true, col: COOL[k % COOL.length], tile: null, orbit: rnd(0, TAU), speed: 0.75 });
+        const agents = [], total = Math.min(62, Math.round(tiles.length * 1.1)), warm = Math.round(total * 22 / 62);
+        for (let k = 0; k < warm; k++) agents.push({ x: rnd(0, 40), y: s.H - rnd(0, 40), vx: 0, vy: 0, cloud: false, col: WARM[k % WARM.length], tile: null, orbit: rnd(0, TAU), speed: 0.55 });
+        for (let k = 0; k < total - warm; k++) agents.push({ x: s.W - rnd(0, 40), y: rnd(0, 40), vx: 0, vy: 0, cloud: true, col: COOL[k % COOL.length], tile: null, orbit: rnd(0, TAU), speed: 0.75 });
         C = { tiles, agents, reset: 0 };
       },
       frame(s, ctx, dt) {
@@ -48,7 +48,9 @@ export function startResearchers(section) {
             const f = free();
             if (f.length) { let best = null, bd = 1e18; for (let n = 0; n < 6; n++) { const t = f[Math.random() * f.length | 0], dd = (t.x - a.x) ** 2 + (t.y - a.y) ** 2; if (dd < bd) { bd = dd; best = t; } } a.tile = best; best.claimed = true; }
           }
-          let tx = a.cloud ? s.W - 30 : 30, ty = a.cloud ? 30 : s.H - 30;
+          // With no tile to work on, an agent circles near its corner instead of piling up there.
+          a.orbit += dt * 1.5; const rr = 14 + (a.col.charCodeAt(2) % 5) * 7;
+          let tx = (a.cloud ? s.W - 40 : 40) + Math.cos(a.orbit) * rr, ty = (a.cloud ? 40 : s.H - 40) + Math.sin(a.orbit) * rr;
           if (a.tile) {
             const t = a.tile, dd = Math.hypot(t.x - a.x, t.y - a.y);
             if (dd < t.d * 0.7) { a.orbit += dt * 5; t.prog += dt * (a.cloud ? 0.32 : 0.4); t.by = a.col; if (t.prog >= 1) { t.prog = 1; a.tile = null; } }
@@ -56,7 +58,8 @@ export function startResearchers(section) {
           }
           if (Math.hypot(s.mx - a.x, s.my - a.y) < 160) { tx = tx * 0.6 + s.mx * 0.4; ty = ty * 0.6 + s.my * 0.4; }
           const dx = tx - a.x, dy = ty - a.y, dl = Math.hypot(dx, dy) + 1e-3;
-          a.vx += dx / dl * a.speed; a.vy += dy / dl * a.speed; a.vx *= 0.9; a.vy *= 0.9; a.x += a.vx; a.y += a.vy;
+          const k = dt * 60, damp = Math.pow(0.9, k); // per-second motion, so a dt = 0 frame (reduced motion) redraws without moving
+          a.vx += dx / dl * a.speed * k; a.vy += dy / dl * a.speed * k; a.vx *= damp; a.vy *= damp; a.x += a.vx * k; a.y += a.vy * k;
           ctx.fillStyle = hexA(a.col, 0.95); dot(ctx, a.x, a.y, 1.8);
           ctx.fillStyle = hexA(a.col, 0.12); dot(ctx, a.x, a.y, 6);
         }

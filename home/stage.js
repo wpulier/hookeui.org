@@ -21,7 +21,7 @@ export function stage(section, { init, frame }) {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const mq = matchMedia('(prefers-reduced-motion: reduce)');
   const s = { W: 0, H: 0, mx: -9999, my: -9999, down: false, clicks: [], t: 0, idle: 99, visible: false, still: mq.matches };
-  cv.dataset.frames = '0';
+  cv.dataset.frames = '0'; cv.dataset.pointer = '';
   let frames = 0, raf = 0, last = 0;
   const at = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   const draw = (dt) => {
@@ -47,11 +47,13 @@ export function stage(section, { init, frame }) {
     raf = requestAnimationFrame(loop);
   }
   function run() { if (s.visible && !s.still && !raf) { last = performance.now(); raf = requestAnimationFrame(loop); } }
-  section.addEventListener('pointermove', (e) => { [s.mx, s.my] = at(e); s.idle = 0; once(); });
-  section.addEventListener('pointerleave', () => { s.mx = s.my = -9999; s.down = false; });
-  section.addEventListener('pointerdown', (e) => { [s.mx, s.my] = at(e); s.down = true; s.idle = 0; s.clicks.push({ x: s.mx, y: s.my }); once(); });
+  // A tap holds its point like a hover, though touch fires pointerleave right after pointerup: it clears on the next tap or when the section leaves the screen.
+  const point = (x, y) => { s.mx = x; s.my = y; cv.dataset.pointer = x < -999 ? '' : `${Math.round(x)},${Math.round(y)}`; };
+  section.addEventListener('pointermove', (e) => { point(...at(e)); s.idle = 0; once(); });
+  section.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') point(-9999, -9999); s.down = false; });
+  section.addEventListener('pointerdown', (e) => { point(...at(e)); s.down = true; s.idle = 0; s.clicks.push({ x: s.mx, y: s.my }); once(); });
   addEventListener('pointerup', () => { s.down = false; });
-  new IntersectionObserver((es) => { s.visible = es[es.length - 1].isIntersecting; run(); }).observe(section);
+  new IntersectionObserver((es) => { s.visible = es[es.length - 1].isIntersecting; if (!s.visible) point(-9999, -9999); run(); }).observe(section);
   mq.addEventListener('change', () => { s.still = mq.matches; if (s.still) once(); else run(); });
   new ResizeObserver(size).observe(cv);
   return s;
