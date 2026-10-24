@@ -503,7 +503,25 @@ async function energyAtOnce(browser) {
   });
 }
 
-const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale, openHarness, energyAtOnce };
+// Every model in use on the first screen is named, at every size, and no name sits at the edge for a model off screen.
+async function litModelsNamed(browser) {
+  for (const [w, h] of SIZES) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      await page.goto(`${BASE}/`);
+      for (let k = 0; k < 3; k++) {
+        await page.waitForTimeout(k ? 1500 : 2500);
+        const r = await page.evaluate(() => {
+          const plan = document.getElementById('ask').dataset.plan.split(',');
+          return plan.map((id) => { const e = document.querySelector(`#ask .lbl[data-id="${id}"]`); return { id, on: e.classList.contains('on'), shown: getComputedStyle(e).opacity !== '0' }; });
+        });
+        const missing = r.filter((x) => x.on && !x.shown).map((x) => x.id);
+        if (missing.length) throw new Error(`${w}x${h}: lit models without names: ${missing.join(', ')}`);
+      }
+    }, w < 900 ? { hasTouch: true, isMobile: true } : {});
+  }
+}
+
+const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale, openHarness, energyAtOnce, litModelsNamed };
 
 const picked = process.argv.slice(2);
 const unknown = picked.filter((n) => !CHECKS[n]);

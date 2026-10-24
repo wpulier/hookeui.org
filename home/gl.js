@@ -168,9 +168,10 @@ export function keepApart(items, box, avoid = [], gap = 3) {
   const touching = (x, y, w, h) => placed.find((p) => x < p.x + p.w + gap && x + w + gap > p.x && y < p.y + p.h + gap && y + h + gap > p.y);
   for (const it of items) {
     const w = it.w, h = it.h, x = Math.max(box.l, Math.min(box.r - w, it.x - w / 2));
-    let y = it.y - h, ok = false;
+    const y0 = Math.max(box.t, Math.min(box.b - h, it.y - h));
+    let y = y0, ok = false;
     for (const dir of [-1, 1]) {
-      y = it.y - h;
+      y = y0;
       for (let pass = 0; pass < 14; pass++) {
         if (y < box.t || y + h > box.b) break;
         const hit = touching(x, y, w, h);
