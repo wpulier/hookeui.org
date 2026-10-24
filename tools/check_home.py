@@ -48,12 +48,15 @@ def links_resolve(args):
     return failures
 
 
+SKIPPED = []
+
+
 def entries_real(args):
     """home/entries.json names real catalog entries, with the right Mac/cloud, and every id used is declared."""
     import json
     import re
     if not args.catalog:
-        print("SKIP entries_real (no --catalog)")
+        SKIPPED.append("entries_real (no --catalog)")
         return []
     path = ROOT / "home" / "entries.json"
     if not path.exists():
@@ -125,7 +128,8 @@ def main():
             bad += 1
     if bad:
         return 1
-    print(f"PASS {len(CHECKS)} check(s)")
+    ran = len(CHECKS) - len(SKIPPED)
+    print(f"PASS {ran} check(s)" + (f", SKIP {len(SKIPPED)}: {'; '.join(SKIPPED)}" if SKIPPED else ""))
     return 0
 
 

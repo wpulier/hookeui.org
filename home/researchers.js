@@ -1,12 +1,9 @@
 // Chapter 2, Researchers: a dataset as a field of eyepieces receding into the dark. Two swarms of researchers, warm from
 // your Mac and cool from the cloud, claim specimens, circle them as they work and light them; the pointer pulls them.
 import { THREE, GOLD, BLUE, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, aim, toScreen } from './gl.js';
-import { stage, loadSky, artFailed, rnd } from './stage.js';
+import { stage, startArt, artFailed, rnd } from './stage.js';
 
-export function startResearchers(section) {
-  if (!webgl()) return artFailed(section);
-  loadSky().then((sky) => build(section, sky), () => artFailed(section));
-}
+export function startResearchers(section) { startArt(section, webgl(), (sky) => build(section, sky)); }
 
 // One picture of the stem's cells in a disc, used by every eyepiece.
 function stemSprite(cells) {
@@ -17,11 +14,12 @@ function stemSprite(cells) {
 }
 
 function build(section, sky) {
-  const view = makeView(section.querySelector('canvas.art'));
+  const view = makeView(section.querySelector('canvas.art'), () => artFailed(section));
   const { scene, camera, composer } = view;
   const U = pointsUniforms(); U.intro.value = 1;
   const tex = stemSprite(sky.cells);
   const tags = ['YOUR MAC', 'CLOUD'].map((t, i) => { const el = document.createElement('div'); el.className = `res-tag ${i ? 'cloud' : 'mac'}`; el.textContent = t; section.appendChild(el); return el; });
+  let freeTop = 0;
   let field = null, tiles = [], agents = [], agentsGeo = null, agentsPts = null, reset = 0, cols = 0, rows = 0, W = 1, H = 1, narrow = false;
   const SP = 1.0, TRAIL = 4;
 
@@ -52,7 +50,7 @@ function build(section, sky) {
   });
 
   function layout(s) {
-    W = s.W; H = s.H; narrow = W < 761;
+    W = s.W; H = s.H; narrow = s.phone; freeTop = s.top;
     view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.3 : 1);
     cols = narrow ? 6 : 15; rows = narrow ? 10 : 14;
     const n = cols * rows, old = tiles;
@@ -73,25 +71,27 @@ function build(section, sky) {
       const mac = k < warm, x = mac ? -ox + rnd(-0.3, 0.3) : ox + rnd(-0.3, 0.3), z = mac ? oz + rnd(-0.3, 0.3) : -oz + rnd(-0.3, 0.3);
       return { mac, col: mac ? GOLD : BLUE, x, z, vx: 0, vz: 0, home: [x, z], tile: null, orbit: rnd(0, 6.283), speed: mac ? 1.7 : 2.3, trail: Array.from({ length: TRAIL }, () => [x, z]) };
     });
-    if (agentsPts) { scene.remove(agentsPts); agentsGeo.dispose(); }
+    if (agentsPts) { scene.remove(agentsPts); agentsGeo.dispose(); agentsPts.material.dispose(); }
     agentsGeo = pointsGeometry(count * TRAIL);
     agentsPts = new THREE.Points(agentsGeo, pointsMaterial(U)); agentsPts.frustumCulled = false; scene.add(agentsPts);
     // the camera looks across the field from its near edge, the far rows fading into the dark
     const span = Math.max(cols, rows * (W / H)) * SP;
     const d = narrow ? rows * SP * 1.25 : span * 0.82;
     tileMat.uniforms.far.value = d * 1.9;
-    aim(camera, new THREE.Vector3(narrow ? 0 : SP * 1.5, 0, narrow ? -0.5 : -0.8), narrow ? 0.95 : 0.62, d, { x: 0, y: 0, w: W, h: H }, W, H);
+    aim(camera, new THREE.Vector3(narrow ? 0 : SP * 1.5, 0, narrow ? -0.5 : -0.8), narrow ? 0.95 : 0.62, d, { x: 0, y: freeTop, w: W, h: H - freeTop }, W, H);
   }
 
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3(), v = new THREE.Vector3();
   stage(section, {
     init: layout,
+    visibility: view.visibility,
     frame(s, dt) {
       U.time.value = s.t;
       const k = dt * 60;
       let pull = null;
       if (s.mx > -999) { ray.setFromCamera(new THREE.Vector2(s.mx / W * 2 - 1, -(s.my / H) * 2 + 1), camera); if (ray.ray.intersectPlane(plane, hit)) pull = hit.clone(); }
-      const free = () => tiles.filter((t) => !t.claimed && t.prog < 1);
+      let open = null;
+      const free = () => (open = (open || tiles.filter((t) => !t.claimed && t.prog < 1)).filter((t) => !t.claimed));
       const A = agentsGeo.attributes;
       agents.forEach((a, i) => {
         if (!a.tile) {
@@ -126,7 +126,7 @@ function build(section, sky) {
       const ox = (cols / 2 + 0.6) * SP, oz = (rows / 2 + 0.6) * SP;
       [[-ox, oz], [ox, -oz]].forEach(([x, z], i) => {
         let [px, py] = toScreen(new THREE.Vector3(x, 0, z), null, camera, W, H, v);
-        px = Math.max(16, Math.min(W - 80, px)); py = Math.max(80, Math.min(H - 30, py)) + s.canvas.offsetTop;
+        px = Math.max(16, Math.min(W - 80, px)); py = Math.max(Math.max(80, freeTop + 10), Math.min(H - 30, py)) + s.canvas.offsetTop;
         tags[i].style.transform = `translate(${px}px, ${py}px)`;
       });
       composer.render(dt);

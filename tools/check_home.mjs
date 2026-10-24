@@ -51,6 +51,7 @@ async function homeChapters(browser) {
   });
 }
 
+// On a phone the art fills each chapter and the words sit over its top, so the glow runs up under them (no hard edge).
 async function phoneLayout(browser) {
   await withPage(browser, { width: 390, height: 844 }, async (page) => {
     await page.goto(`${BASE}/`);
@@ -59,12 +60,29 @@ async function phoneLayout(browser) {
     if (w > 390) throw new Error(`page is ${w}px wide at 390`);
     for (const id of IDS) {
       const r = await page.evaluate((i) => {
-        const c = document.getElementById(i);
-        return [c.querySelector('.words').getBoundingClientRect().bottom, c.querySelector('canvas.art').getBoundingClientRect().top];
+        const c = document.getElementById(i), sec = c.getBoundingClientRect(), cv = c.querySelector('canvas.art').getBoundingClientRect(), wd = c.querySelector('.words').getBoundingClientRect();
+        return { top: cv.top - sec.top, h: cv.height, sh: sec.height, words: wd.top - sec.top };
       }, id);
-      if (r[0] > r[1] + 0.5) throw new Error(`${id}: words end at ${r[0]} but the canvas starts at ${r[1]}`);
+      if (Math.abs(r.top) > 1 || Math.abs(r.h - r.sh) > 2) throw new Error(`${id}: the art doesn't fill the chapter (top ${r.top}, ${r.h} of ${r.sh}px)`);
+      if (r.words > 1) throw new Error(`${id}: the words start ${r.words}px down`);
     }
-  });
+  }, { hasTouch: true, isMobile: true });
+}
+
+// The finale: the line, both buttons, four steps, at a laptop and on a phone.
+async function finale(browser) {
+  for (const [w, h] of [[1440, 900], [390, 844]]) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      await page.goto(`${BASE}/`);
+      const t = (await page.locator('#install h2').innerText()).trim();
+      if (t !== 'Come and look.') throw new Error(`finale says "${t}"`);
+      const steps = await page.locator('#install .finale-steps li').count();
+      if (steps !== 4) throw new Error(`${steps} steps`);
+      const sw = await page.evaluate(() => document.documentElement.scrollWidth);
+      if (sw > w) throw new Error(`page is ${sw}px wide at ${w}`);
+      if ((await page.locator('#install a.button').count()) !== 2) throw new Error('the finale lacks its two buttons');
+    });
+  }
 }
 
 async function oldAnchors(browser) {
@@ -247,10 +265,12 @@ async function firstCycles(browser) {
   });
 }
 
-const labelBoxes = (page) => page.evaluate(() => {
+const LABELS = { ask: '#ask .lbl', workspace: '#workspace .ws-lbl', capabilities: '#capabilities .cap-lbl' };
+const labelBoxes = (page, id) => page.evaluate(([sel, i]) => {
   const bx = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
-  return { labels: [...document.querySelectorAll('#ask .lbl')].filter((e) => getComputedStyle(e).opacity !== '0' && e.offsetWidth).map((e) => ({ id: e.dataset.id, ...bx(e) })), words: bx(document.querySelector('#ask .words')), bar: bx(document.querySelector('header.top')), w: innerWidth };
-});
+  return { labels: [...document.querySelectorAll(sel)].filter((e) => getComputedStyle(e).opacity !== '0' && e.offsetWidth).map((e) => ({ id: e.dataset.id || e.textContent.trim().slice(0, 20), ...bx(e) })),
+    words: bx(document.querySelector(`#${i} .words`)), bar: bx(document.querySelector('header.top')), w: innerWidth };
+}, [LABELS[id], id]);
 function checkApart({ labels, words, bar, w }, where) {
   const hit = (a, b) => a.l < b.r - 1 && a.r > b.l + 1 && a.t < b.b - 1 && a.b > b.t + 1;
   for (let i = 0; i < labels.length; i++) {
@@ -261,21 +281,24 @@ function checkApart({ labels, words, bar, w }, where) {
     for (let j = i + 1; j < labels.length; j++) if (hit(a, labels[j])) throw new Error(`${where}: ${a.id} touches ${labels[j].id}`);
   }
 }
+const SIZES = [[1440, 900], [1280, 720], [1024, 700], [844, 390], [740, 360], [390, 844], [360, 740]];
 async function labelsApart(browser) {
+  for (const [w, h] of SIZES) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      await page.goto(`${BASE}/`);
+      for (const id of Object.keys(LABELS)) {
+        await toView(page, id);
+        for (let k = 0; k < 3; k++) { await page.waitForTimeout(id === 'ask' && k === 0 ? 5500 : 1500); checkApart(await labelBoxes(page, id), `${id} at ${w}x${h}`); }
+      }
+    }, w < 900 ? { hasTouch: true, isMobile: true } : {});
+  }
   await withPage(browser, { width: 1440, height: 900 }, async (page) => {
-    await page.goto(`${BASE}/`);
-    await page.waitForTimeout(7500);
-    checkApart(await labelBoxes(page), '1440x900');
+    await page.goto(`${BASE}/`); await page.waitForTimeout(6000);
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(2500);
-    checkApart(await labelBoxes(page), '1440 then 390');
+    checkApart(await labelBoxes(page, 'ask'), 'ask 1440 then 390');
     await page.setViewportSize({ width: 1440, height: 900 }); await page.waitForTimeout(2500);
-    checkApart(await labelBoxes(page), '390 then 1440');
+    checkApart(await labelBoxes(page, 'ask'), 'ask 390 then 1440');
   });
-  await withPage(browser, { width: 390, height: 844 }, async (page) => {
-    await page.goto(`${BASE}/`);
-    await page.waitForTimeout(7500);
-    checkApart(await labelBoxes(page), '390x844');
-  }, { hasTouch: true, isMobile: true });
 }
 async function specimenSize(browser) {
   for (const [w, h, k] of [[1440, 900, 0.28], [390, 844, 0.55]]) {
@@ -355,7 +378,105 @@ async function resizeKeepsState(browser) {
   });
 }
 
-const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState };
+// The first screen's words show without any script help, on a phone and wide, and even with no IntersectionObserver.
+async function wordsVisible(browser) {
+  for (const [w, h, noIO] of [[390, 844, false], [1440, 900, false], [390, 844, true]]) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      if (noIO) await page.addInitScript(() => { delete window.IntersectionObserver; });
+      await page.goto(`${BASE}/`);
+      await page.waitForTimeout(1800);
+      const o = await page.$$eval('#ask .words > *', (els) => els.filter((e) => e.offsetParent).map((e) => getComputedStyle(e).opacity));
+      if (!o.length || o.some((x) => x !== '1')) throw new Error(`${w}x${h}${noIO ? ' (no IntersectionObserver)' : ''}: first-screen words at opacity [${o}]`);
+      const short = await page.$eval('#ask .words p .short', (e) => getComputedStyle(e).display);
+      if ((w < 761) !== (short !== 'none')) throw new Error(`${w}px: the short line is ${short}`);
+    });
+  }
+}
+
+// On a phone, Download becomes "Send to my Mac" and shares the download page's link.
+async function sendToMac(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.addInitScript(() => { navigator.share = (d) => { window.__shared = d; return Promise.resolve(); }; });
+    await page.goto(`${BASE}/`);
+    await page.waitForTimeout(800);
+    const btn = page.locator('#ask a.button.primary');
+    const label = (await btn.innerText()).trim();
+    if (label !== 'Send to my Mac') throw new Error(`the phone's button says "${label}"`);
+    await btn.click();
+    await page.waitForTimeout(300);
+    const shared = await page.evaluate(() => window.__shared);
+    if (!shared || !/download\.html$/.test(shared.url)) throw new Error(`shared ${JSON.stringify(shared)}`);
+    if (!page.url().replace(/#.*/, '').endsWith('/')) throw new Error(`the page navigated to ${page.url()}`);
+  }, { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1', hasTouch: true, isMobile: true });
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    const label = (await page.locator('#ask a.button.primary').innerText()).trim();
+    if (label !== 'Download for Mac') throw new Error(`on a Mac the button says "${label}"`);
+  });
+}
+
+// Chapter 4 carries "Meet your staff": pointing at a model shows who made it, from the catalog's credit.
+async function capMakers(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`); await capReady(page);
+    const eb = (await page.locator('#capabilities .eyebrow').innerText()).trim();
+    if (eb.toLowerCase() !== 'meet your staff') throw new Error(`chapter 4 eyebrow is "${eb}"`);
+    if ((await page.locator('section.dusk').count()) !== 0) throw new Error('the old Meet your staff section is still on the page');
+    const m = await capModel(page, 'cellpose-sam');
+    await page.mouse.move(m.x, m.y, { steps: 3 }); await page.waitForTimeout(400);
+    const t = (await page.locator('#capabilities .cap-lbl[data-id="cellpose-sam"] small').innerText()).trim();
+    if (t !== ENTRIES.entries['cellpose-sam'].by) throw new Error(`pointing at Cellpose-SAM shows "${t}"`);
+    noErrors(page);
+  });
+}
+
+async function webgl1Only(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.addInitScript(() => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return t === 'webgl2' ? null : g.call(this, t, ...a); }; });
+    await page.goto(`${BASE}/`); await page.waitForTimeout(1000); await stillsShow(page, ART); noErrors(page);
+  });
+}
+async function noRoundRect(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.addInitScript(() => { delete CanvasRenderingContext2D.prototype.roundRect; });
+    await page.goto(`${BASE}/`); await page.waitForTimeout(2500);
+    if (!(await frames(page, 'ask') > 0)) throw new Error('the first screen drew nothing without roundRect');
+    noErrors(page);
+  });
+}
+async function reducedMotionTaps(browser) {
+  const Qs = ENTRIES.first.questions;
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.goto(`${BASE}/`); await page.waitForTimeout(1500);
+    const b = await page.locator('#ask-q').boundingBox();
+    await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await page.waitForTimeout(500);
+    const q = await page.$eval('#ask-q .t', (e) => e.textContent.trim());
+    if (q !== Qs[1].q) throw new Error(`with reduced motion, tapping the question left "${q}"`);
+    const on = await page.$$eval('#ask .lbl.on', (els) => els.length);
+    if (on < 3) throw new Error(`with reduced motion, only ${on} models stay lit after the tap`);
+    await toView(page, 'capabilities'); await page.waitForTimeout(1200);
+    const sp = await page.evaluate(() => window.hookeHome.capabilities.specimen());
+    await page.touchscreen.tap(sp.x, sp.y); await page.waitForTimeout(600);
+    const lens = (await page.locator('#cap-lens').innerText()).trim();
+    if (!lens || /nothing here yet/.test(lens)) throw new Error(`with reduced motion, a tap on the specimen shows "${lens}"`);
+    noErrors(page);
+  }, { reducedMotion: 'reduce', hasTouch: true, isMobile: true });
+}
+async function scrollIsNotATap(browser) {
+  await withPage(browser, { width: 390, height: 844 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    await toView(page, 'workspace'); await page.waitForTimeout(1200);
+    const cdp = await page.context().newCDPSession(page);
+    const t = (type, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: 195, y }] });
+    await t('touchStart', 640); for (let y = 620; y >= 380; y -= 20) await t('touchMove', y); await t('touchEnd');
+    await page.waitForTimeout(800);
+    const r = await page.evaluate(() => ({ p: document.querySelector('#workspace canvas.art').dataset.pointer, pick: getComputedStyle(document.getElementById('ws-pick')).display }));
+    if (r.p) throw new Error(`a scroll left a pointer at ${r.p}`);
+    if (r.pick !== 'none') throw new Error('a scroll opened the workspace readout');
+  }, { hasTouch: true, isMobile: true });
+}
+
+const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale };
 
 const picked = process.argv.slice(2);
 const unknown = picked.filter((n) => !CHECKS[n]);

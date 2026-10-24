@@ -2,25 +2,23 @@
 // to each other. The pointer turns the stack and opens it; a pointed-at cell lights through every layer, and the
 // readout names each layer's model.
 import { THREE, GOLD, PALE, lin, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, aim, fitDistance, toScreen, keepApart, FRAME } from './gl.js';
-import { stage, loadSky, artFailed, clamp } from './stage.js';
+import { stage, startArt, artFailed, clamp } from './stage.js';
 
 const LAYER_COL = ['#c8ccdc', '#f2c46d', '#ffd98f', '#f59e6b', '#ffad66', '#8cc2ff'].map((h) => new THREE.Color(h));
 const GROUPS = ['#ff8fb8', '#8fe3c0', '#b39bff', '#ffd27a'].map((h) => new THREE.Color(h));
 
-export function startWorkspace(section, entries) {
-  if (!webgl()) return artFailed(section);
-  loadSky().then((sky) => build(section, entries, sky), () => artFailed(section));
-}
+export function startWorkspace(section, entries) { startArt(section, webgl(), (sky) => build(section, entries, sky)); }
 
 function build(section, entries, sky) {
   const cells = sky.cells, N = cells.length;
   const lenses = entries.lenses.map((l) => ({ name: l.id ? entries.entries[l.id].name : l.name, sub: l.sub }));
   const pick = section.querySelector('#ws-pick');
-  const view = makeView(section.querySelector('canvas.art'));
+  const view = makeView(section.querySelector('canvas.art'), () => artFailed(section));
   const { scene, camera, composer } = view;
   const stack = new THREE.Group(); scene.add(stack);
   const U = pointsUniforms(); U.intro.value = 1;
   const P = (c) => new THREE.Vector3(c.x - FRAME.cx, 0, -(c.y - FRAME.cy));
+  const CP = cells.map(P);
 
   // ring points: a hollow circle per cell, for the outlines layer
   const ringMat = new THREE.ShaderMaterial({
@@ -68,20 +66,24 @@ function build(section, entries, sky) {
   });
 
   // the thread through the pointed-at cell
-  const thread = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: 0xfff1d6, dashSize: 0.04, gapSize: 0.03, transparent: true, opacity: 0 }));
+  const threadGeo = new THREE.BufferGeometry();
+  threadGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3)); threadGeo.setAttribute('lineDistance', new THREE.BufferAttribute(new Float32Array(2), 1));
+  const thread = new THREE.Line(threadGeo, new THREE.LineDashedMaterial({ color: 0xfff1d6, dashSize: 0.04, gapSize: 0.03, transparent: true, opacity: 0 }));
+  thread.frustumCulled = false;
   scene.add(thread);
   const beadGeo = pointsGeometry(layers.length); scene.add(new THREE.Points(beadGeo, pointsMaterial(U)));
 
-  let W = 1, H = 1, narrow = false, gap = 0.3, yaw = -0.35, rect = null, dist = 8, el = 0.42, picked = -1, lastPickAt = '';
+  let freeTop = 0;
+  let W = 1, H = 1, narrow = false, gap = 0.3, yaw = -0.35, rect = null, dist = 8, el = 0.42, picked = -1, lastPickAt = '', shown = -1;
   const target = new THREE.Vector3(0, 0, 0), v = new THREE.Vector3();
   const place = (d) => aim(camera, target, el, d, rect, W, H);
   function setGap(gp) { gap = gp; layers.forEach((l, k) => { l.g.position.y = (k - (layers.length - 1) / 2) * gp; }); stack.updateMatrixWorld(true); }
   function layout(s) {
-    W = s.W; H = s.H; narrow = W < 761;
+    W = s.W; H = s.H; narrow = s.phone; freeTop = s.top;
     view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.2 : 1);
     el = narrow ? 0.62 : 0.42;
     const words = section.querySelector('.words').getBoundingClientRect(), cv = s.canvas.getBoundingClientRect();
-    rect = narrow ? { x: 8, y: 8, w: W - 16, h: H - 16 } : { x: Math.max(W * 0.42, words.right - cv.left + 30), y: 80, w: 0, h: H - 130 };
+    rect = narrow ? { x: 8, y: freeTop + 8, w: W - 16, h: H - freeTop - 16 } : { x: Math.max(W * 0.42, words.right - cv.left + 30), y: 80, w: 0, h: H - 130 };
     if (!narrow) rect.w = W - rect.x - W * 0.14;
     setGap(narrow ? 0.46 : 0.6);
     const bounds = () => { const b = []; layers.forEach((l) => { for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; b.push(new THREE.Vector3(Math.cos(a) * 1.2, l.g.position.y, Math.sin(a) * 1.2)); } }); return b; };
@@ -95,6 +97,7 @@ function build(section, entries, sky) {
 
   stage(section, {
     init: layout,
+    visibility: view.visibility,
     frame(s, dt) {
       U.time.value = s.t;
       const here = s.mx > -999, k = 1 - Math.pow(0.94, dt * 60);
@@ -110,7 +113,7 @@ function build(section, entries, sky) {
         for (let l = 0; l < layers.length; l++) {
           const y = layers[l].g.position.y;
           for (let i = 0; i < N; i += 1) {
-            v.copy(P(cells[i])); v.y = y; v.applyMatrix4(stack.matrixWorld).project(camera);
+            v.copy(CP[i]); v.y = y; v.applyMatrix4(stack.matrixWorld).project(camera);
             const dx = (v.x + 1) / 2 * W - s.mx, dy = (1 - v.y) / 2 * H - s.my, d = dx * dx + dy * dy;
             if (d < bd) { bd = d; best = i; }
           }
@@ -119,20 +122,22 @@ function build(section, entries, sky) {
       } else if (!here) { picked = -1; lastPickAt = ''; }
       const B = beadGeo.attributes;
       if (picked >= 0) {
-        const pts = layers.map((l) => P(cells[picked]).add(new THREE.Vector3(0, l.g.position.y, 0)).applyMatrix4(stack.matrixWorld));
-        thread.geometry.setFromPoints([pts[0], pts[pts.length - 1]]); thread.computeLineDistances(); thread.material.opacity = 0.8;
+        const pts = layers.map((l) => CP[picked].clone().setY(l.g.position.y).applyMatrix4(stack.matrixWorld));
+        const a = pts[0], b = pts[pts.length - 1], TP = threadGeo.attributes.position;
+        TP.setXYZ(0, a.x, a.y, a.z); TP.setXYZ(1, b.x, b.y, b.z); TP.needsUpdate = true;
+        threadGeo.attributes.lineDistance.setX(1, a.distanceTo(b)); threadGeo.attributes.lineDistance.needsUpdate = true; thread.material.opacity = 0.8;
         pts.forEach((p, i) => { B.position.setXYZ(i, p.x, p.y, p.z); B.start.setXYZ(i, p.x, p.y, p.z); const c = layers[i].col; B.color.setXYZ(i, c.r, c.g, c.b); B.tint.setXYZ(i, c.r, c.g, c.b); B.size.setX(i, 70); B.lit.setX(i, 1); B.seed.setX(i, 0); });
         const [x, y] = toScreen(pts[pts.length - 1], null, camera, W, H, v);
         pick.style.display = 'block';
-        pick.innerHTML = `<b>One cell, through every lens</b>${lenses.map((l, i) => `<span style="color:#${layers[i].col.getHexString()}">${l.name}</span>`).join(' · ')}`;
+        if (shown < 0) { pick.innerHTML = `<b>One cell, through every lens</b>${lenses.map((l, i) => `<span style="color:#${layers[i].col.getHexString()}">${l.name}</span>`).join(' · ')}`; shown = 1; }
         const pw = pick.offsetWidth;
         pick.style.left = `${clamp(x + 18, 8, W - pw - 8)}px`; pick.style.top = `${clamp(y - 70, 8, H - 120) + s.canvas.offsetTop}px`;
-      } else { thread.material.opacity = 0; for (let i = 0; i < layers.length; i++) B.size.setX(i, 0); pick.style.display = 'none'; }
+      } else { thread.material.opacity = 0; for (let i = 0; i < layers.length; i++) B.size.setX(i, 0); if (pick.style.display !== 'none') pick.style.display = 'none'; }
       for (const key2 of ['position', 'start', 'color', 'tint', 'size', 'lit']) B[key2].needsUpdate = true;
       // each layer's name at its right edge, kept apart
-      const items = layers.map((l, i) => { const [x, y] = toScreen(new THREE.Vector3(1.32, l.g.position.y, 0), null, camera, W, H, v); return { l, x: x + l.el.offsetWidth / 2 + 6, y: y + 8 + s.canvas.offsetTop, w: l.el.offsetWidth, h: l.el.offsetHeight }; });
-      items.sort((a, b) => b.y - a.y); keepApart(items);
-      for (const it of items) it.l.el.style.transform = `translate(${clamp(it.left, 4, W - it.w - 4)}px, ${it.top}px)`;
+      const items = layers.map((l) => { if (!l.lw) { l.lw = l.el.offsetWidth; l.lh = l.el.offsetHeight; } const [x, y] = toScreen(new THREE.Vector3(1.32, l.g.position.y, 0), null, camera, W, H, v); return { l, x: x + l.lw / 2 + 6, y: y + 8 + s.canvas.offsetTop, w: l.lw, h: l.lh }; });
+      items.sort((a, b) => b.y - a.y); keepApart(items, { l: 4, t: (narrow ? freeTop : 70) + 2, r: W - 4, b: s.canvas.offsetTop + H - 4 });
+      for (const it of items) { it.l.el.style.opacity = it.hidden ? '0' : ''; it.l.el.style.transform = `translate(${it.left}px, ${it.top}px)`; }
       composer.render(dt);
     },
   });

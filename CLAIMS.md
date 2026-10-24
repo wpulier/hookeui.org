@@ -16,6 +16,8 @@ Will, 2026-10-23; its evidence is the hosted agent-access spec and tickets, `doc
 | Hooke, open source | Go-live checklist D11 (drafted, not applied); README "Licence"; `docs/planning/open-source-successor/charter.md` |
 | Parallel researchers for scientific data | `services/orchestrator/research/AGENTS.md` (researchers run as separate efforts alongside each other); cloud side `docs/planning/hooke-hosted-agent-access/README.md`, "declared as existing by Will, 2026-10-23" |
 | Stack open-source models across long-horizon tasks, on your Mac and in the cloud at once | `services/orchestrator/brain/AGENTS.md`, `brain/toolbox/` (one question becomes runs of several catalog models); `services/orchestrator/research/AGENTS.md` "efforts and the clock" (researchers run for hours); `catalog/models/*/model.toml` (`runs` = this-mac, cpu or cloud); cloud as above |
+| On phones: "Open-source models, stacked on your Mac and in the cloud." | As "Stack open-source models … on your Mac and in the cloud at once" |
+| On phones and tablets: "Send to my Mac" and "Hooke is a Mac app." | The 0.1.2+ DMG is a Mac app for Apple silicon (as the story page's "Free, for Macs with Apple silicon" row); the button shares or copies the link to `download.html` |
 | For educators, researchers and explorers | `services/orchestrator/research/AGENTS.md` (lessons and quizzes for teaching; research efforts); `docs/first-experience.md` (the bundled example needs no account, key or camera) |
 | Free, for Macs with Apple silicon and macOS 14 or later | As the story page's row of the same text |
 | The first screen's picture: HookeUI's workspace, the live specimen (1,523 cells, plant stem), a question, the models it stacks and the lines saying what each does | An illustration of the app, not a recording: the cells are `media/sky.json` (Cellpose-SAM's saved result) over the real capture `media/sky-photo.jpg`; model names and Mac/cloud from `home/entries.json`, checked against `catalog/models` by `tools/check_home.py` |
@@ -24,7 +26,9 @@ Will, 2026-10-23; its evidence is the hosted agent-access spec and tickets, `doc
 | The open-source models science runs on, one click away; segmentation, tracking, classification and Fiji, beside the best cloud models | `catalog/models/*/model.toml` (Cellpose-SAM, micro-sam, InstanSeg, SAM 3.1, EdgeTAM, Trackastra, BioCLIP 2, DINOv3, MedSigLIP, Fiji, brainreg; Gemini, GPT, Claude, SAM 3.1 hosted); AGENTS.md "Turn on" sheet |
 | Switch them on, stack them, and ask about any spot | AGENTS.md "Turn on" sheet; `services/orchestrator/brain/AGENTS.md` (pointing, outlines, "the outline check"); `docs/architecture/seeing-and-acting.md` |
 | Page description and link card: the first screen's headline and paragraph | As the rows above |
-| The cork section and the end (catalog, "The sky keeps filling", install) | The same text and evidence as the story page: its rows below |
+| Meet your staff: behind every name are people who spent years teaching a model to see one thing well; Hooke brings their work a click from your microscope, and names it on every result it helps make | As the story page's "Meet your staff" row; each model's maker shown on pointing comes from its catalog `credit.authors` (`home/entries.json` `by`) |
+| The cork section | The same text and evidence as the story page: its rows below |
+| Finale: free, open source, for Macs with Apple silicon; a signed Mac app installed with Finder, no terminal or developer tools; the four steps (download and open the disk image; drag to Applications; first launch prepares Python and packages, about 350 MB, step by step on screen; the bundled example measures a real microscope image on your Mac); the example and local models need no key, chat, voice and naming use a cloud provider with your own key; source on GitHub with the first public release | The story page's install rows ("Come and look", the steps, the key note) and its licence row |
 
 ## Story page (story.html)
 

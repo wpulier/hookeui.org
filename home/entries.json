@@ -2,23 +2,28 @@
   "entries": {
     "cellpose-sam": {
       "name": "Cellpose-SAM",
-      "where": "mac"
+      "where": "mac",
+      "by": "Pachitariu, Rariden and Stringer"
     },
     "micro-sam-lm": {
       "name": "micro-sam",
-      "where": "mac"
+      "where": "mac",
+      "by": "Archit, Pape et al."
     },
     "edgetam": {
       "name": "EdgeTAM",
-      "where": "mac"
+      "where": "mac",
+      "by": "Meta Reality Labs"
     },
     "trackastra": {
       "name": "Trackastra",
-      "where": "mac"
+      "where": "mac",
+      "by": "Gallusser and Weigert"
     },
     "bioclip-2": {
       "name": "BioCLIP 2",
-      "where": "mac"
+      "where": "mac",
+      "by": "Imageomics Institute"
     },
     "fiji-analyze-particles": {
       "name": "Fiji · Analyze Particles",
@@ -26,7 +31,8 @@
     },
     "brainreg": {
       "name": "brainreg",
-      "where": "mac"
+      "where": "mac",
+      "by": "Tyson et al. (BrainGlobe)"
     },
     "allen-mouse-25um": {
       "name": "Allen atlas",
@@ -34,11 +40,13 @@
     },
     "dinov3-small": {
       "name": "DINOv3",
-      "where": "mac"
+      "where": "mac",
+      "by": "Meta AI"
     },
     "spot-measure": {
       "name": "Spot measure",
-      "where": "mac"
+      "where": "mac",
+      "by": "Hooke contributors, with SciPy"
     },
     "spot-shape": {
       "name": "Spot shape",
@@ -46,35 +54,43 @@
     },
     "gemini-3.8-flash": {
       "name": "Gemini",
-      "where": "cloud"
+      "where": "cloud",
+      "by": "Google DeepMind"
     },
     "gpt-6.1-sol": {
       "name": "GPT",
-      "where": "cloud"
+      "where": "cloud",
+      "by": "OpenAI"
     },
     "claude-opus-5-5": {
       "name": "Claude",
-      "where": "cloud"
+      "where": "cloud",
+      "by": "Anthropic"
     },
     "sam3.1-cloud": {
       "name": "SAM 3.1 hosted",
-      "where": "cloud"
+      "where": "cloud",
+      "by": "Meta AI, hosted by fal"
     },
     "instanseg-brightfield": {
       "name": "InstanSeg",
-      "where": "mac"
+      "where": "mac",
+      "by": "Goldsborough, Bankhead et al."
     },
     "sam3.1-local": {
       "name": "SAM 3.1",
-      "where": "mac"
+      "where": "mac",
+      "by": "Meta AI"
     },
     "medsiglip": {
       "name": "MedSigLIP",
-      "where": "mac"
+      "where": "mac",
+      "by": "Google Health AI"
     },
     "fiji": {
       "name": "Fiji",
-      "where": "mac"
+      "where": "mac",
+      "by": "Schindelin et al. and the ImageJ community"
     }
   },
   "lenses": [
