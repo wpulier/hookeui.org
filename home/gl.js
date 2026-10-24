@@ -11,13 +11,23 @@ export const GOLD = new THREE.Color('#f2c46d'), BLUE = new THREE.Color('#8cc2ff'
 // sky.json colours are sRGB; the pipeline works in linear light.
 export const lin = (x) => Math.pow(x, 2.2);
 
+// three.js here needs WebGL 2. The probe's context is released at once so it doesn't count against the browser's limit.
 export function webgl() {
-  try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch { return false; }
 }
 
-// The renderer, a soft glow that leaves dim things (words drawn into textures) alone, and the output in sRGB.
-export function makeView(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+// The renderer, a soft glow that leaves dim things (words drawn into textures) alone, and the output in sRGB. Everything
+// is drawn into the composer's targets, so the canvas itself needs no antialiasing; the targets' pixel ratio is capped
+// to keep GPU memory modest on phones and tablets, and sleep() frees them while the chapter is off screen. If the
+// browser takes the context away, onLost runs (the chapter shows its still).
+export function makeView(canvas, onLost) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+  canvas.addEventListener('webglcontextlost', () => onLost && onLost(), { once: true });
   renderer.setClearColor(new THREE.Color(0x04050b).convertSRGBToLinear(), 1);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
@@ -26,11 +36,16 @@ export function makeView(canvas) {
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.85, 0.34, 0.34);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
+  let last = null;
   const size = (W, H, dpr) => {
-    renderer.setPixelRatio(dpr); renderer.setSize(W, H, false); composer.setPixelRatio(dpr); composer.setSize(W, H);
+    const r = Math.min(dpr, 1.5); last = [W, H, dpr];
+    renderer.setPixelRatio(r); renderer.setSize(W, H, false); composer.setPixelRatio(r); composer.setSize(W, H);
     bloom.resolution.set(W / 2, H / 2); camera.aspect = W / H;
   };
-  return { renderer, scene, camera, composer, bloom, size };
+  const sleep = () => { renderer.setPixelRatio(1); renderer.setSize(1, 1, false); composer.setPixelRatio(1); composer.setSize(1, 1); };
+  const wake = () => { if (last) size(...last); };
+  const visibility = (v) => (v ? wake() : sleep());
+  return { renderer, scene, camera, composer, bloom, size, visibility };
 }
 
 // Glowing points. Attributes: position, start (where it flies in from), color, tint (what a hit turns it), size, lit
@@ -145,16 +160,26 @@ export function toScreen(p, object, camera, W, H, out = new THREE.Vector3()) {
   out.copy(p); if (object) out.applyMatrix4(object.matrixWorld); out.project(camera);
   return [(out.x + 1) / 2 * W, (1 - out.y) / 2 * H, out.z];
 }
-// Labels anchored at [x, y] (bottom centre) are lifted until none touches another, in the order given.
-export function keepApart(items, gap = 3) {
-  const placed = [];
+// Labels anchored at [x, y] (bottom centre), in the order given, each kept inside box {l, t, r, b} and away from the
+// boxes in avoid: a label that touches one already placed (or an avoided box) is lifted above it, or else dropped
+// below it; one that fits nowhere is hidden (it.hidden), never left overlapping.
+export function keepApart(items, box, avoid = [], gap = 3) {
+  const placed = avoid.map((a) => ({ x: a.l, y: a.t, w: a.r - a.l, h: a.b - a.t }));
+  const touching = (x, y, w, h) => placed.find((p) => x < p.x + p.w + gap && x + w + gap > p.x && y < p.y + p.h + gap && y + h + gap > p.y);
   for (const it of items) {
-    const w = it.w, h = it.h; let x = it.x - w / 2, y = it.y - h;
-    for (let pass = 0; pass < 12; pass++) {
-      const hit = placed.find((p) => x < p.x + p.w + gap && x + w + gap > p.x && y < p.y + p.h + gap && y + h + gap > p.y);
-      if (!hit) break;
-      y = hit.y - h - gap;
+    const w = it.w, h = it.h, x = Math.max(box.l, Math.min(box.r - w, it.x - w / 2));
+    let y = it.y - h, ok = false;
+    for (const dir of [-1, 1]) {
+      y = it.y - h;
+      for (let pass = 0; pass < 14; pass++) {
+        if (y < box.t || y + h > box.b) break;
+        const hit = touching(x, y, w, h);
+        if (!hit) { ok = true; break; }
+        y = dir < 0 ? hit.y - h - gap : hit.y + hit.h + gap;
+      }
+      if (ok) break;
     }
-    placed.push({ x, y, w, h }); it.left = x; it.top = y;
+    it.hidden = !ok; it.left = x; it.top = y;
+    if (ok) placed.push({ x, y, w, h });
   }
 }

@@ -5,20 +5,20 @@
 // the pointer; a sideways drag turns the stage; a tap on the specimen asks every chosen model about that spot; a tap on
 // the question asks the next one.
 import { THREE, GOLD, BLUE, PALE, lin, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, specimenPoints, spores, aim, fitDistance, toScreen, keepApart, FRAME } from './gl.js';
-import { stage, loadSky, artFailed, clamp } from './stage.js';
+import { stage, startArt, artFailed, clamp } from './stage.js';
 
 const DUR = 10.5;
 
-export function startFirst(section, entries) {
-  if (!webgl()) return artFailed(section);
-  loadSky().then((sky) => build(section, entries, sky), () => artFailed(section));
-}
+export function startFirst(section, entries) { startArt(section, webgl(), (sky) => build(section, entries, sky)); }
+
+// A rounded rectangle path (CanvasRenderingContext2D.roundRect is missing before Safari 16).
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
 function build(section, entries, sky) {
   const E = entries.entries, F = entries.first;
   const pill = section.querySelector('#ask-q'), qt = pill.querySelector('.t'), qs = pill.querySelector('.s');
   const labelsEl = section.querySelector('.first-labels'), specEl = section.querySelector('.first-spec');
-  const view = makeView(section.querySelector('canvas.art'));
+  const view = makeView(section.querySelector('canvas.art'), () => artFailed(section));
   const { scene, camera, composer } = view;
   const world = new THREE.Group(); scene.add(world);
   const U = pointsUniforms();
@@ -65,7 +65,7 @@ function build(section, entries, sky) {
   });
   world.add(new THREE.Points(nodeGeo, pointsMaterial(U)));
   const curveUp = (n) => new THREE.QuadraticBezierCurve3(Q.clone(), new THREE.Vector3(n.pos.x * 0.35, (Q.y + n.pos.y) / 2 + 0.25, n.pos.z * 0.5), n.pos.clone());
-  let narrow = false;
+  let narrow = false, compact = false;
   function setStack(qy) {
     Q.y = qy;
     nodes.forEach((n, i) => {
@@ -83,10 +83,11 @@ function build(section, entries, sky) {
     const others = nodes.filter((n) => !chosen.includes(n.id));
     nodes.forEach((n, i) => {
       const c = chosen.indexOf(n.id);
-      if (narrow && c >= 0) { n.u = c / (chosen.length - 1) * 2 - 1; n.row = c % 2; }
-      else if (narrow) { const k = others.indexOf(n); n.u = (k + 0.5) / others.length * 2 - 1; n.row = 2; }
+      if (compact && c >= 0) { n.u = c / (chosen.length - 1) * 2 - 1; n.row = c % 2; }
+      else if (compact) { const k = others.indexOf(n); n.u = (k + 0.5) / others.length * 2 - 1; n.row = 2; }
       else { n.u = i / (nodes.length - 1) * 2 - 1; n.row = i % 2; }
-      nodeGeo.attributes.size.setX(i, narrow ? (c >= 0 ? 78 : 30) : 58);
+      nodeGeo.attributes.size.setX(i, compact ? (c >= 0 ? 78 : 30) : 58);
+      n.measured = false;
     });
     nodeGeo.attributes.size.needsUpdate = true; arranged = qi; setStack(Q.y);
   }
@@ -116,7 +117,7 @@ function build(section, entries, sky) {
   function drawWorkspace(cur, t) {
     const g = ui.getContext('2d'), w = ui.width, h = ui.height, k = w / PW;
     g.clearRect(0, 0, w, h);
-    g.beginPath(); g.roundRect(4, 4, w - 8, h - 8, 46); g.fillStyle = 'rgba(11,13,24,0.92)'; g.fill();
+    rr(g, 4, 4, w - 8, h - 8, 46); g.fillStyle = 'rgba(11,13,24,0.92)'; g.fill();
     g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,0.09)'; g.stroke();
     g.save(); g.clip();
     g.fillStyle = 'rgba(255,255,255,0.03)'; g.fillRect(0, 0, w, 96);
@@ -129,7 +130,7 @@ function build(section, entries, sky) {
     g.fillStyle = 'rgba(255,255,255,0.02)'; g.fillRect(0, 96, side, h);
     g.font = '600 22px Inter, system-ui'; g.fillStyle = 'rgba(140,146,170,0.6)'; g.fillText('SOURCES', 40, 160);
     [['Live camera', 1], ['Plant stem', 1], ['Sperm wet mount', 0], ['Human cells', 0], ['Brain atlas', 0]].forEach(([s, on], i) => {
-      const y = 210 + i * 64; if (i === 1) { g.fillStyle = 'rgba(242,196,109,0.09)'; g.beginPath(); g.roundRect(24, y - 38, side - 48, 54, 12); g.fill(); }
+      const y = 210 + i * 64; if (i === 1) { g.fillStyle = 'rgba(242,196,109,0.09)'; rr(g, 24, y - 38, side - 48, 54, 12); g.fill(); }
       g.font = '400 28px Inter, system-ui'; g.fillStyle = on ? 'rgba(236,234,228,0.62)' : 'rgba(160,165,190,0.42)'; g.fillText(s, 44, y);
     });
     g.font = '600 22px Inter, system-ui'; g.fillStyle = 'rgba(140,146,170,0.6)'; g.fillText('RESEARCHERS', 40, 620);
@@ -154,6 +155,7 @@ function build(section, entries, sky) {
   // layout: the specimen is sized from concept 08's footprint (its rim and a nine-model arc); the question then sits on
   // the far rim; the arc then takes all the room it has without touching the words or the top bar.
   const target = new THREE.Vector3(0, 0.78, 0);
+  let wordsRight = 0, lastQ = '', lastS = '';
   let W = 1, H = 1, rect = null, dist = 6, EL = 0.52, yaw = 0, yawV = 0;
   const rimPts = Array.from({ length: 24 }, (_, i) => new THREE.Vector3(Math.cos(i / 24 * Math.PI * 2) * 1.12, 0, Math.sin(i / 24 * Math.PI * 2) * 1.12));
   const footprint = () => [...rimPts, ...Array.from({ length: 9 }, (_, i) => { const u = i / 4 - 1; return [new THREE.Vector3(u * 1.35, Q.y + 1.27 + 0.34 * (1 - u * u), -0.35 * (1 - u * u)), new THREE.Vector3(u * 1.35 + Math.sign(u) * 0.25, Q.y + 1.05 + 0.34 * (1 - u * u), -0.35 * (1 - u * u))]; }).flat()];
@@ -162,13 +164,13 @@ function build(section, entries, sky) {
   const sy = (p) => toScreen(p, null, camera, W, H, v)[1];
 
   function layout(s) {
-    W = s.W; H = s.H; narrow = W < 761;
+    W = s.W; H = s.H; narrow = s.canvas.offsetTop > 20; compact = narrow || H < 560 || W < 761;
     view.size(W, H, s.dpr);
     U.px.value = s.dpr * H / 900 * (narrow ? 1.25 : 1);
-    if (sp) { world.remove(sp.pts); sp.pts.geometry.dispose(); }
+    if (sp) { world.remove(sp.pts); sp.pts.geometry.dispose(); sp.pts.material.dispose(); }
     sp = spores(narrow ? 1500 : 3200, sporeCols); world.add(sp.pts); sp.uniforms.aspect.value = W / H; sp.uniforms.px.value = s.dpr * H / 900 * (narrow ? 1.3 : 1);
     EL = narrow ? 0.74 : 0.52; target.y = narrow ? 0.95 : 0.78;
-    rect = narrow ? { x: 6, y: 10, w: W - 12, h: H - 46 } : { x: W * 0.47, y: 90, w: W * 0.5, h: H - 120 };
+    rect = narrow ? { x: 6, y: 10, w: W - 12, h: H - 46 } : { x: W * 0.47, y: Math.min(90, H * 0.14), w: W * 0.5, h: H - Math.min(120, H * 0.2) };
     const pillH = Math.max(pill.offsetHeight, narrow ? 52 : 70);
     ARC.w = 1.35; ARC.b = 1.12; arrange(Math.max(0, arranged)); setStack(0.5);
     for (let pass = 0; pass < 3; pass++) {
@@ -180,7 +182,8 @@ function build(section, entries, sky) {
     }
     // the arc: as high, then as wide, as the free space allows
     const words = section.querySelector('.words').getBoundingClientRect(), cv = s.canvas.getBoundingClientRect();
-    const outer = narrow ? { x: 4, y: 4, w: W - 8, h: H } : { x: Math.max(words.right - cv.left + 24, rect.x - W * 0.05), y: 84, w: W, h: H };
+    wordsRight = narrow ? 0 : words.right - cv.left;
+    const outer = narrow ? { x: 4, y: 4, w: W - 8, h: H } : { x: Math.max(wordsRight + 24, rect.x - W * 0.05), y: 84, w: W, h: H };
     outer.w = W - outer.x - 12;
     const pad = narrow ? 0.18 : 0.3;
     const fitsArc = () => nodes.every((n) => [n.pos.clone().add(new THREE.Vector3(0, 0.3, 0)), n.pos.clone().add(new THREE.Vector3(-pad, 0, 0)), n.pos.clone().add(new THREE.Vector3(pad, 0, 0))].every((p) => {
@@ -202,6 +205,7 @@ function build(section, entries, sky) {
   const tilt = { x: 0, y: 0 };
   stage(section, {
     init: layout,
+    visibility: view.visibility,
     frame(s, dt) {
       const T = s.t; U.time.value = T; if (sp) sp.uniforms.time.value = T;
       U.intro.value = s.still ? 1 : Math.min(1, U.intro.value + dt / 2.8); if (sp) sp.uniforms.intro.value = U.intro.value;
@@ -210,23 +214,31 @@ function build(section, entries, sky) {
       const off = s.canvas.offsetTop, pb = pill.getBoundingClientRect(), cb = s.canvas.getBoundingClientRect();
       for (const c of s.clicks) {
         const px = c.x + cb.left, py = c.y + cb.top;
-        if (px > pb.left && px < pb.right && py > pb.top && py < pb.bottom) { qi = (qi + 1) % F.questions.length; t0 = T - 1.6; t = 0; motes.length = 0; continue; }
+        if (px > pb.left && px < pb.right && py > pb.top && py < pb.bottom) { qi = (qi + 1) % F.questions.length; t0 = T - 1.6; t = s.still ? 6 : 0; motes.length = 0; continue; }
         ray.setFromCamera(new THREE.Vector2(c.x / W * 2 - 1, -(c.y / H) * 2 + 1), camera);
         const r = ray.ray.clone().applyMatrix4(world.matrixWorld.clone().invert());
         if (r.intersectPlane(plane, hit) && hit.length() < 1.1) {
-          nodes.filter((n) => n.on > 0.5).forEach((n) => { for (let k = 0; k < 9; k++) sendDown(n, hit.clone()); n.fire = 1; });
-          ripple.position.set(hit.x, 0.01, hit.z); rippleT = 0;
+          const lit = nodes.filter((n) => n.on > 0.5);
+          if (s.still) {
+            const L = spec.geometry.attributes.lit, Tn = spec.geometry.attributes.tint;
+            for (let i = 0, k = 0; i < cells.length; i++) if (cellPos(i, v).distanceTo(hit) < 0.3) { const n = lit[k++ % Math.max(1, lit.length)]; if (n) { L.setX(i, 1); Tn.setXYZ(i, n.col.r, n.col.g, n.col.b); } }
+          } else {
+            lit.forEach((n) => { for (let k = 0; k < 9; k++) sendDown(n, hit.clone()); n.fire = 1; });
+            ripple.position.set(hit.x, 0.01, hit.z); rippleT = 0;
+          }
         }
       }
-      if (t > DUR) { qi = (qi + 1) % F.questions.length; t0 = T - 1.6; t = 0; }
+      if (t > DUR && !s.still) { qi = (qi + 1) % F.questions.length; t0 = T - 1.6; t = 0; }
       if (arranged !== qi) arrange(qi);
       const cur = F.questions[qi], chosen = Object.keys(cur.use), live = t > 0;
       section.dataset.plan = chosen.join(',');
       pill.classList.toggle('on', live);
-      qt.textContent = cur.q.slice(0, Math.round(clamp(t / 1.3, 0, 1) * cur.q.length));
+      const qText = cur.q.slice(0, Math.round(clamp(t / 1.3, 0, 1) * cur.q.length));
+      if (qText !== lastQ) { qt.textContent = qText; lastQ = qText; }
       const nc = chosen.filter((id) => E[id].where === 'cloud').length, nm = chosen.length;
-      qs.innerHTML = narrow ? `${nm} models · <b>${nm - nc} Mac</b> · <b class="c">${nc} cloud</b> · in parallel`
+      const sText = narrow ? `${nm} models · <b>${nm - nc} Mac</b> · <b class="c">${nc} cloud</b> · in parallel`
         : `${nm} models stacked · <b>${nm - nc} on your Mac</b> · <b class="c">${nc} in the cloud</b> · researchers in parallel`;
+      if (sText !== lastS) { qs.innerHTML = sText; lastS = sText; }
       qs.classList.toggle('on', t > 2.2 && t < DUR - 0.8);
       // the plan: chosen models light and their curves grow
       const grow = clamp((t - 1.4) / 1.0, 0, 1), out = t > DUR - 1 ? Math.max(0, DUR - t) : 1;
@@ -235,8 +247,10 @@ function build(section, entries, sky) {
         n.on += (want - n.on) * (s.still ? 1 : Math.min(1, dt * 4)); n.fire *= Math.pow(0.9, dt * 60);
         nodeGeo.attributes.lit.setX(i, Math.min(1.6, n.on + n.fire * 0.6));
         n.line.geometry.setDrawRange(0, Math.round(61 * grow * (n.on > 0.05 ? 1 : 0))); n.line.material.opacity = 0.34 * n.on;
-        n.el.classList.toggle('on', n.on > 0.5);
-        if (n.id in cur.use) n.el.querySelector('em').textContent = cur.use[n.id];
+        const isOn = n.on > 0.5;
+        if (isOn !== n.wasOn) { n.el.classList.toggle('on', isOn); n.wasOn = isOn; n.measured = false; }
+        const why = cur.use[n.id] || '';
+        if (why && why !== n.why) { n.el.querySelector('em').textContent = why; n.why = why; n.measured = false; }
         if (!s.still && n.on > 0.5 && t > 2.4 && t < DUR - 1.4 && Math.random() < dt * (narrow ? 3 : 2.2)) sendUp(n);
       });
       nodeGeo.attributes.lit.needsUpdate = true;
@@ -274,15 +288,17 @@ function build(section, entries, sky) {
       if (sp) sp.uniforms.pointer.value.set(s.mx > -999 ? s.mx / W * 2 - 1 : 9, s.my > -999 ? -(s.my / H) * 2 + 1 : 9);
       // labels, the question and the specimen's tag follow the scene; labels never touch
       const items = [];
+      const [qx, qy] = toScreen(Q, world, camera, W, H, v);
+      pill.style.transform = `translate(${qx}px, ${qy + off}px) translate(-50%, -50%)`;
+      const pw = pill.offsetWidth, ph = pill.offsetHeight;
       nodes.forEach((n) => {
-        const [x, y] = toScreen(n.pos, world, camera, W, H, v), show = !narrow || n.on > 0.5;
-        n.el.style.opacity = show ? '' : '0';
-        if (show) items.push({ n, x, y: y - 12 + off, w: n.el.offsetWidth, h: n.el.offsetHeight, z: n.on });
+        const [x, y] = toScreen(n.pos, world, camera, W, H, v), show = !compact || n.on > 0.5;
+        if (!n.measured) { n.lw = n.el.offsetWidth; n.lh = n.el.offsetHeight; n.measured = true; }
+        if (show) items.push({ n, x, y: y - 12 + off, w: n.lw, h: n.lh, z: n.on }); else n.el.style.opacity = '0';
       });
       items.sort((a, b) => b.z - a.z || a.x - b.x);
-      keepApart(items);
-      for (const it of items) it.n.el.style.transform = `translate(${clamp(it.left, 4, W - it.w - 4)}px, ${it.top}px)`;
-      { const [x, y] = toScreen(Q, world, camera, W, H, v); pill.style.transform = `translate(${x}px, ${y + off}px) translate(-50%, -50%)`; }
+      keepApart(items, { l: narrow ? 4 : Math.max(4, wordsRight + 16), t: narrow ? off + 2 : 70, r: W - 4, b: off + H - 4 }, [{ l: qx - pw / 2, t: qy + off - ph / 2, r: qx + pw / 2, b: qy + off + ph / 2 }]);
+      for (const it of items) { it.n.el.style.opacity = it.hidden ? '0' : ''; it.n.el.style.transform = `translate(${it.left}px, ${it.top}px)`; }
       { const [x, y] = toScreen(new THREE.Vector3(0, 0, 1.16), world, camera, W, H, v); specEl.style.transform = `translate(${x}px, ${Math.min(y + 10, H - 22) + off}px) translate(-50%, 0)`; specEl.classList.add('on'); }
       if (s.still || Math.floor(T * 4) !== Math.floor((T - dt) * 4) || T < 0.1) drawWorkspace(cur, t);
       composer.render(dt);
