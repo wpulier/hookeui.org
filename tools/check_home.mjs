@@ -492,14 +492,18 @@ async function openHarness(browser) {
     });
   }
 }
-// The first screen's light arrives at once: cells are lit within a second of load.
+// The first screen opens with ceremony, then shoots: the question is typed and the models lit within two seconds, and
+// their first volley has reached the specimen within three and a half.
 async function energyAtOnce(browser) {
   await withPage(browser, { width: 1440, height: 900 }, async (page) => {
-    await page.goto(`${BASE}/`); await page.waitForTimeout(1000);
+    await page.goto(`${BASE}/`); await page.waitForTimeout(2000);
     const on = await page.$$eval('#ask .lbl.on', (els) => els.length);
-    if (on < 3) throw new Error(`a second after load only ${on} models are lit`);
+    if (on < 3) throw new Error(`two seconds after load only ${on} models are lit`);
     const q = await page.$eval('#ask-q .t', (e) => e.textContent.trim());
-    if (q !== ENTRIES.first.questions[0].q) throw new Error(`a second after load the question reads "${q}"`);
+    if (q !== ENTRIES.first.questions[0].q) throw new Error(`two seconds after load the question reads "${q}"`);
+    await page.waitForTimeout(1500);
+    const hits = Number(await page.$eval('#ask', (e) => e.dataset.hits || 0));
+    if (!hits) throw new Error('three and a half seconds after load no light has reached the specimen');
   });
 }
 
