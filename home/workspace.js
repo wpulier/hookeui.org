@@ -102,8 +102,9 @@ function build(section, entries, sky) {
       U.time.value = s.t;
       const here = s.mx > -999, k = 1 - Math.pow(0.94, dt * 60);
       // held still while a cell is picked, so its readout can be read; otherwise the pointer turns and opens the stack
-      // how far the chapter has come up the screen: 0 until its top is 85% of the way down, 1 once it fills the screen
-      const top = section.getBoundingClientRect().top, p = clamp((0.85 - top / innerHeight) / 0.85, 0, 1), e = p * p * (3 - 2 * p);
+      // pressed together until the chapter's top is under half a screen from the top, then opening, slowly at first, to
+      // fully apart just as the chapter fills the screen
+      const top = section.getBoundingClientRect().top, p = clamp((0.45 - top / innerHeight) / 0.43, 0, 1), e = Math.pow(p * p * (3 - 2 * p), 1.5);
       const wantGap = s.still ? fullGap : 0.025 + e * (fullGap - 0.025) + (here ? (0.5 - s.my / H) * 0.06 : Math.sin(s.t * 0.6) * 0.015 * e);
       const wantYaw = here ? -1.0 + (s.mx / W) * 1.3 : -0.35 + Math.sin(s.t * 0.15) * 0.35;
       setGap(s.still ? wantGap : gap + (wantGap - gap) * (1 - Math.pow(0.82, dt * 60)));
