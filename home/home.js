@@ -4,6 +4,7 @@ import { startFirst } from './first.js';
 import { startResearchers } from './researchers.js';
 import { startWorkspace } from './workspace.js';
 import { startCapabilities } from './capabilities.js';
+import { startOpenMap } from './open.js';
 
 const $ = (id) => document.getElementById(id);
 // Model names and plans live in one file that chapters 1, 3 and 4 share. Without it those chapters show their stills.
@@ -11,6 +12,7 @@ const entries = fetch('home/entries.json').then((r) => { if (!r.ok) throw new Er
 entries.then((e) => { startFirst($('ask'), e); startWorkspace($('workspace'), e); startCapabilities($('capabilities'), e); },
   () => ['ask', 'workspace', 'capabilities'].forEach((id) => $(id).classList.add('no-art')));
 startResearchers($('researchers'));
+startOpenMap(document.querySelector('#harness .open-map'));
 
 // Later chapters' words rise in as they arrive. Only words still below the screen are hidden, and only when the browser
 // can say when they arrive; coming back to the page (pageshow) shows any that were passed.

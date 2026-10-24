@@ -476,7 +476,34 @@ async function scrollIsNotATap(browser) {
   }, { hasTouch: true, isMobile: true });
 }
 
-const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale };
+// Open by design: the harnesses and the community's catalog around Hooke, a line from each, at a laptop and a phone.
+async function openHarness(browser) {
+  for (const [w, h] of [[1440, 900], [390, 844]]) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      await page.goto(`${BASE}/`);
+      await page.evaluate(() => window.scrollTo(0, document.getElementById('harness').offsetTop)); await page.waitForTimeout(800);
+      const t = (await page.locator('#harness h2').innerText()).trim();
+      if (t !== 'Bring Hooke to the agent you already use.') throw new Error(`heading is "${t}"`);
+      const chips = await page.locator('#harness .open-map li').count(), lines = await page.locator('#harness .open-lines path').count();
+      if (chips !== 7 || lines !== 7) throw new Error(`${w}px: ${chips} chips, ${lines} lines`);
+      const sw = await page.evaluate(() => document.documentElement.scrollWidth);
+      if (sw > w) throw new Error(`page is ${sw}px wide at ${w}`);
+      noErrors(page);
+    });
+  }
+}
+// The first screen's light arrives at once: cells are lit within a second of load.
+async function energyAtOnce(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`); await page.waitForTimeout(1000);
+    const on = await page.$$eval('#ask .lbl.on', (els) => els.length);
+    if (on < 3) throw new Error(`a second after load only ${on} models are lit`);
+    const q = await page.$eval('#ask-q .t', (e) => e.textContent.trim());
+    if (q !== ENTRIES.first.questions[0].q) throw new Error(`a second after load the question reads "${q}"`);
+  });
+}
+
+const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale, openHarness, energyAtOnce };
 
 const picked = process.argv.slice(2);
 const unknown = picked.filter((n) => !CHECKS[n]);
