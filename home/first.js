@@ -2,7 +2,7 @@
 // specimen (the 1,523 cells Cellpose-SAM found in a real stained stem, the real capture faint beneath them); on the
 // specimen your question; above, every model. The question's chosen models light, researchers carry the question up
 // to each in parallel, and each model's light comes down into the cells. Spores rise off the specimen and part around
-// the pointer; a sideways drag turns the stage; a tap on the specimen asks every chosen model about that spot; a tap on
+// the pointer; a tap on the specimen asks every chosen model about that spot; a tap on
 // the question asks the next one.
 import { THREE, GOLD, BLUE, PALE, lin, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, specimenPoints, spores, aim, fitDistance, toScreen, keepApart, FRAME } from './gl.js';
 import { stage, startArt, artFailed, clamp } from './stage.js';
@@ -164,7 +164,7 @@ function build(section, entries, sky) {
   // the far rim; the arc then takes all the room it has without touching the words or the top bar.
   const target = new THREE.Vector3(0, 0.78, 0);
   let wordsRight = 0, lastQ = '', lastS = '', freeTop = 0;
-  let W = 1, H = 1, rect = null, dist = 6, EL = 0.52, yaw = 0, yawV = 0;
+  let W = 1, H = 1, rect = null, dist = 6, EL = 0.52;
   const rimPts = Array.from({ length: 24 }, (_, i) => new THREE.Vector3(Math.cos(i / 24 * Math.PI * 2) * 1.12, 0, Math.sin(i / 24 * Math.PI * 2) * 1.12));
   const footprint = () => [...rimPts, ...Array.from({ length: 9 }, (_, i) => { const u = i / 4 - 1; return [new THREE.Vector3(u * 1.35, Q.y + (narrow ? 1.7 : 1.27) + 0.34 * (1 - u * u), -0.35 * (1 - u * u)), new THREE.Vector3(u * 1.35 + Math.sign(u) * 0.25, Q.y + 1.05 + 0.34 * (1 - u * u), -0.35 * (1 - u * u))]; }).flat()];
   const place = (d) => aim(camera, target, EL, d, rect, W, H, 0);
@@ -241,18 +241,19 @@ function build(section, entries, sky) {
       if (arranged !== qi) arrange(qi);
       const cur = F.questions[qi], chosen = Object.keys(cur.use), live = t > 0;
       section.dataset.plan = chosen.join(',');
-      pill.classList.toggle('on', live);
-      const qText = cur.q.slice(0, Math.round(clamp(t / 1.1, 0, 1) * cur.q.length));
+      const SENT = 0.95, BACK = 2.1, away = t > SENT && t < BACK;
+      pill.classList.toggle('on', live && !away); pill.classList.toggle('sent', away);
+      const qText = cur.q.slice(0, Math.round(clamp(t / 0.75, 0, 1) * cur.q.length));
       if (qText !== lastQ) { qt.textContent = qText; lastQ = qText; }
       const nc = chosen.filter((id) => E[id].where === 'cloud').length, nm = chosen.length;
       const sText = narrow ? `${nm} models · <b>${nm - nc} Mac</b> · <b class="c">${nc} cloud</b> · in parallel`
-        : `${nm} models stacked · <b>${nm - nc} on your Mac</b> · <b class="c">${nc} in the cloud</b> · researchers in parallel`;
+        : `${nm} models stacked · <b>${nm - nc} on your Mac</b> · <b class="c">${nc} in the cloud</b> · in parallel`;
       if (sText !== lastS) { qs.innerHTML = sText; lastS = sText; }
-      qs.classList.toggle('on', t > 1.8 && t < DUR - 0.8);
+      qs.classList.toggle('on', t > BACK && t < DUR - 0.8);
       // the plan: chosen models light and their curves grow
-      const grow = clamp((t - 0.9) / 0.8, 0, 1), out = t > DUR - 1 ? Math.max(0, DUR - t) : 1;
+      const grow = clamp((t - 1.15) / 0.8, 0, 1), out = t > DUR - 1 ? Math.max(0, DUR - t) : 1;
       nodes.forEach((n, i) => {
-        const want = chosen.includes(n.id) && t > 0.9 ? out : 0;
+        const want = chosen.includes(n.id) && t > 1.15 ? out : 0;
         n.on += (want - n.on) * (s.still ? 1 : Math.min(1, dt * 4)); n.fire *= Math.pow(0.9, dt * 60);
         nodeGeo.attributes.lit.setX(i, Math.min(1.6, n.on + n.fire * 0.6));
         n.line.geometry.setDrawRange(0, Math.round(61 * grow * (n.on > 0.05 ? 1 : 0))); n.line.material.opacity = 0.34 * n.on;
@@ -260,7 +261,7 @@ function build(section, entries, sky) {
         if (isOn !== n.wasOn) { n.el.classList.toggle('on', isOn); n.wasOn = isOn; n.measured = false; }
         const why = cur.use[n.id] || '';
         if (why && why !== n.why) { n.el.querySelector('em').textContent = why; n.why = why; n.measured = false; }
-        if (!s.still && n.on > 0.5 && t > 1.5 && t < DUR - 1.4) {
+        if (!s.still && n.on > 0.5 && t > 1.7 && t < DUR - 1.4) {
           if (!n.shots && T >= n.nextVolley) { n.shots = n.first ? 3 : 5; n.nextShot = T; }
           if (n.shots && T >= n.nextShot) {
             if (n.first) sendUp(n); else for (let k = 0; k < 2; k++) sendDown(n);
@@ -294,13 +295,11 @@ function build(section, entries, sky) {
       for (let i = 0; i < cells.length; i++) { const x = L.getX(i); if (x > 0.003) L.setX(i, x * f); }
       L.needsUpdate = true; spec.geometry.attributes.tint.needsUpdate = true;
       rippleT += dt; ripple.scale.setScalar(0.05 + rippleT * 0.7); ripple.material.opacity = Math.max(0, 0.55 - rippleT * 0.45);
-      // a sideways drag turns the stage and lets it coast; otherwise it leans toward the pointer and sways
-      if (s.dragX) yawV = s.dragX / W * 2.4 / Math.max(dt, 1 / 60);
-      yaw += yawV * dt; yawV *= Math.pow(0.05, dt); yaw *= Math.pow(0.6, dt);
+      // the stage leans toward the pointer and sways
       const pmx = s.mx > -999 ? s.mx / W - 0.5 : 0, pmy = s.my > -999 ? s.my / H - 0.5 : 0;
       tilt.y += ((pmx * 0.3 + Math.sin(T * 0.12) * 0.08) - tilt.y) * Math.min(1, dt * 2.5);
       tilt.x += ((pmy * 0.06) - tilt.x) * Math.min(1, dt * 2.5);
-      world.rotation.set(tilt.x, tilt.y + yaw, 0); world.updateMatrixWorld();
+      world.rotation.set(tilt.x, tilt.y, 0); world.updateMatrixWorld();
       if (sp) sp.uniforms.pointer.value.set(s.mx > -999 ? s.mx / W * 2 - 1 : 9, s.my > -999 ? -(s.my / H) * 2 + 1 : 9);
       // labels, the question and the specimen's tag follow the scene; labels never touch
       const items = [];
