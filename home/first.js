@@ -84,9 +84,9 @@ function build(section, entries, sky) {
     nodes.forEach((n, i) => {
       const c = chosen.indexOf(n.id);
       if (compact && c >= 0) { n.u = c / (chosen.length - 1) * 2 - 1; n.row = c % 2; }
-      else if (compact) { const k = others.indexOf(n); n.u = (k + 0.5) / others.length * 2 - 1; n.row = 2; }
+      else if (compact) { const k = others.indexOf(n), side = k % 2 ? 1 : -1, j = Math.floor(k / 2); n.u = side * (1.14 + j * 0.11); n.row = j % 2; }
       else { n.u = i / (nodes.length - 1) * 2 - 1; n.row = i % 2; }
-      nodeGeo.attributes.size.setX(i, compact ? (c >= 0 ? 78 : 30) : 58);
+      nodeGeo.attributes.size.setX(i, compact ? (c >= 0 ? 78 : 44) : 58);
       n.measured = false;
     });
     nodeGeo.attributes.size.needsUpdate = true; arranged = qi; setStack(Q.y);
@@ -155,7 +155,7 @@ function build(section, entries, sky) {
   // layout: the specimen is sized from concept 08's footprint (its rim and a nine-model arc); the question then sits on
   // the far rim; the arc then takes all the room it has without touching the words or the top bar.
   const target = new THREE.Vector3(0, 0.78, 0);
-  let wordsRight = 0, lastQ = '', lastS = '';
+  let wordsRight = 0, lastQ = '', lastS = '', freeTop = 0;
   let W = 1, H = 1, rect = null, dist = 6, EL = 0.52, yaw = 0, yawV = 0;
   const rimPts = Array.from({ length: 24 }, (_, i) => new THREE.Vector3(Math.cos(i / 24 * Math.PI * 2) * 1.12, 0, Math.sin(i / 24 * Math.PI * 2) * 1.12));
   const footprint = () => [...rimPts, ...Array.from({ length: 9 }, (_, i) => { const u = i / 4 - 1; return [new THREE.Vector3(u * 1.35, Q.y + 1.27 + 0.34 * (1 - u * u), -0.35 * (1 - u * u)), new THREE.Vector3(u * 1.35 + Math.sign(u) * 0.25, Q.y + 1.05 + 0.34 * (1 - u * u), -0.35 * (1 - u * u))]; }).flat()];
@@ -164,13 +164,13 @@ function build(section, entries, sky) {
   const sy = (p) => toScreen(p, null, camera, W, H, v)[1];
 
   function layout(s) {
-    W = s.W; H = s.H; narrow = s.canvas.offsetTop > 20; compact = narrow || H < 560 || W < 761;
+    W = s.W; H = s.H; narrow = s.phone; freeTop = s.top; compact = narrow || H < 560 || W < 761;
     view.size(W, H, s.dpr);
     U.px.value = s.dpr * H / 900 * (narrow ? 1.25 : 1);
     if (sp) { world.remove(sp.pts); sp.pts.geometry.dispose(); sp.pts.material.dispose(); }
     sp = spores(narrow ? 1500 : 3200, sporeCols); world.add(sp.pts); sp.uniforms.aspect.value = W / H; sp.uniforms.px.value = s.dpr * H / 900 * (narrow ? 1.3 : 1);
     EL = narrow ? 0.74 : 0.52; target.y = narrow ? 0.95 : 0.78;
-    rect = narrow ? { x: 6, y: 10, w: W - 12, h: H - 46 } : { x: W * 0.47, y: Math.min(90, H * 0.14), w: W * 0.5, h: H - Math.min(120, H * 0.2) };
+    rect = narrow ? { x: 6, y: freeTop + 4, w: W - 12, h: H - freeTop - 40 } : { x: W * 0.47, y: Math.min(90, H * 0.14), w: W * 0.5, h: H - Math.min(120, H * 0.2) };
     const pillH = Math.max(pill.offsetHeight, narrow ? 52 : 70);
     ARC.w = 1.35; ARC.b = 1.12; arrange(Math.max(0, arranged)); setStack(0.5);
     for (let pass = 0; pass < 3; pass++) {
@@ -183,10 +183,10 @@ function build(section, entries, sky) {
     // the arc: as high, then as wide, as the free space allows
     const words = section.querySelector('.words').getBoundingClientRect(), cv = s.canvas.getBoundingClientRect();
     wordsRight = narrow ? 0 : words.right - cv.left;
-    const outer = narrow ? { x: 4, y: 4, w: W - 8, h: H } : { x: Math.max(wordsRight + 24, rect.x - W * 0.05), y: 84, w: W, h: H };
+    const outer = narrow ? { x: 4, y: freeTop + 4, w: W - 8, h: H } : { x: Math.max(wordsRight + 24, rect.x - W * 0.05), y: 84, w: W, h: H };
     outer.w = W - outer.x - 12;
     const pad = narrow ? 0.18 : 0.3;
-    const fitsArc = () => nodes.every((n) => [n.pos.clone().add(new THREE.Vector3(0, 0.3, 0)), n.pos.clone().add(new THREE.Vector3(-pad, 0, 0)), n.pos.clone().add(new THREE.Vector3(pad, 0, 0))].every((p) => {
+    const fitsArc = () => nodes.filter((n) => Math.abs(n.u) <= 1.001).every((n) => [n.pos.clone().add(new THREE.Vector3(0, 0.3, 0)), n.pos.clone().add(new THREE.Vector3(-pad, 0, 0)), n.pos.clone().add(new THREE.Vector3(pad, 0, 0))].every((p) => {
       const [x, y] = toScreen(p, null, camera, W, H, v); return x > outer.x && x < outer.x + outer.w && y > outer.y && y < outer.y + outer.h; }));
     ARC.row = narrow ? 0.3 : 0.24;
     let lo = 0.55, hi = 1.5; ARC.w = 0.9;
@@ -292,12 +292,12 @@ function build(section, entries, sky) {
       pill.style.transform = `translate(${qx}px, ${qy + off}px) translate(-50%, -50%)`;
       const pw = pill.offsetWidth, ph = pill.offsetHeight;
       nodes.forEach((n) => {
-        const [x, y] = toScreen(n.pos, world, camera, W, H, v), show = !compact || n.on > 0.5;
+        const [x, y] = toScreen(n.pos, world, camera, W, H, v), show = true;
         if (!n.measured) { n.lw = n.el.offsetWidth; n.lh = n.el.offsetHeight; n.measured = true; }
         if (show) items.push({ n, x, y: y - 12 + off, w: n.lw, h: n.lh, z: n.on }); else n.el.style.opacity = '0';
       });
       items.sort((a, b) => b.z - a.z || a.x - b.x);
-      keepApart(items, { l: narrow ? 4 : Math.max(4, wordsRight + 16), t: narrow ? off + 2 : 70, r: W - 4, b: off + H - 4 }, [{ l: qx - pw / 2, t: qy + off - ph / 2, r: qx + pw / 2, b: qy + off + ph / 2 }]);
+      keepApart(items, { l: narrow ? 4 : Math.max(4, wordsRight + 16), t: narrow ? freeTop + 2 : 70, r: W - 4, b: off + H - 4 }, [{ l: qx - pw / 2, t: qy + off - ph / 2, r: qx + pw / 2, b: qy + off + ph / 2 }]);
       for (const it of items) { it.n.el.style.opacity = it.hidden ? '0' : ''; it.n.el.style.transform = `translate(${it.left}px, ${it.top}px)`; }
       { const [x, y] = toScreen(new THREE.Vector3(0, 0, 1.16), world, camera, W, H, v); specEl.style.transform = `translate(${x}px, ${Math.min(y + 10, H - 22) + off}px) translate(-50%, 0)`; specEl.classList.add('on'); }
       if (s.still || Math.floor(T * 4) !== Math.floor((T - dt) * 4) || T < 0.1) drawWorkspace(cur, t);

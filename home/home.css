@@ -30,10 +30,10 @@ body.home .top nav a { display: inline; }
 .words .eyebrow { color: #727894; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 2vh; }
 .words .note { color: #727894; font-size: 13px; }
 .words .actions { margin-top: 3vh; display: flex; gap: 10px; flex-wrap: wrap; }
-.words .button { font-weight: 600; border-radius: 999px; padding: 13px 20px; color: #f3f1ec; background: rgba(255, 255, 255, .04); border: 0; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.words .button.primary { color: #04050b; background: #f3f1ec; box-shadow: 0 8px 30px rgba(243, 241, 236, .12); }
-.words .button:hover { background: rgba(255, 255, 255, .1); }
-.words .button.primary:hover { background: #fff; }
+.words .button, .finale .button { font-weight: 600; border-radius: 999px; padding: 13px 20px; color: #f3f1ec; background: rgba(255, 255, 255, .04); border: 0; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.words .button.primary, .finale .button.primary { color: #04050b; background: #f3f1ec; box-shadow: 0 8px 30px rgba(243, 241, 236, .12); }
+.words .button:hover, .finale .button:hover { background: rgba(255, 255, 255, .1); }
+.words .button.primary:hover, .finale .button.primary:hover { background: #fff; }
 .words a:focus-visible { outline-color: rgba(243, 239, 231, 0.7); }
 /* The first screen's words rise in by CSS alone, so they show even if a script never runs; later chapters' words are
    hidden only once the script has seen they are still below the screen, and rise in when they arrive. */
@@ -87,18 +87,19 @@ body.home .top nav a { display: inline; }
 .end { background: #04050b; }
 
 @media (max-width: 760px) and (orientation: portrait), (max-width: 520px) {
-  .chapter { display: flex; flex-direction: column; }
-  .words, #researchers .words { position: static; transform: none; max-width: none; padding: 78px 20px 6px; order: -1; }
+  /* Phones: the art fills the chapter and the words sit over its top on a ground that fades into it, so the glow runs
+     up under them instead of stopping at an edge. */
+  .chapter { display: block; }
+  .words, #researchers .words { position: absolute; top: 0; left: 0; right: 0; bottom: auto; transform: none; max-width: none; padding: 78px 20px 26px;
+    background: linear-gradient(180deg, #04050b 0%, rgba(4, 5, 11, .94) 62%, rgba(4, 5, 11, .6) 84%, rgba(4, 5, 11, 0) 100%); }
   .words h1 { font-size: 31px; } .words h2 { font-size: 27px; }
   .words p { font-size: 14px; margin-top: 10px; }
   .words .eyebrow { margin-bottom: 10px; }
-  .words .actions { margin-top: 14px; } .words .button { padding: 11px 16px; font-size: 14px; }
+  .words .actions { margin-top: 14px; } .words .button, .finale .button { padding: 11px 16px; font-size: 14px; }
   .words .note:not(.send) { display: none; }
   .words .long { display: none; } .words .short { display: inline; }
   .words .note.send { margin-top: 8px; font-size: 12px; }
-  .chapter .art { position: relative; inset: auto; flex: 1; min-height: 0; height: auto; }
-  .chapter .still { position: absolute; inset: auto 0 0 0; height: auto; }
-  .chapter.no-art .still { position: relative; flex: 1; min-height: 0; height: 0; }
+  #ask::before { display: none; }
   .ask-q { min-width: 0; max-width: 78vw; padding: 8px 12px 9px; border-radius: 13px; }
   .ask-q .k { font-size: 8.5px; } .ask-q .t { font-size: 13px; margin-top: 3px; } .ask-q .s { font-size: 10px; margin-top: 4px; }
   .lbl { font-size: 11px; } .lbl small, .lbl em { display: none !important; }
@@ -126,19 +127,42 @@ body.home .top.scrolled { background: rgba(4, 5, 11, .72); backdrop-filter: blur
 .cap-lbl.hot small { display: block; }
 .words p.staff { font-size: clamp(13px, .95vw, 15px); color: #8f94a8; margin-top: 2vh; }
 @media (max-width: 760px) and (orientation: portrait), (max-width: 520px) { .words p.staff { font-size: 12.5px; margin-top: 8px; line-height: 1.45; } .cap-lbl.hot small { display: none; } }
-/* The cork section's morning back into night for the install steps. */
-.end #install { padding-top: 34vh; background: linear-gradient(180deg, #ffffff 0%, #f1e6e2 7%, #d7bfc8 12%, #7d6f9e 18%, #2b2f63 24%, #0b1230 30%, #04050b 36%); }
-/* The install button matches the home page's buttons. */
-.end #install .button { border-radius: 999px; padding: 13px 20px; font-weight: 600; border: 0; }
-.end #install .button.primary { color: #04050b; background: #f3f1ec; box-shadow: 0 8px 30px rgba(243, 241, 236, .12); }
 
 /* A phone on its side: words beside the art, smaller, as on a laptop. */
 @media (max-height: 520px) and (orientation: landscape) {
   .words { max-width: 42vw; left: 5vw; }
   .words h1 { font-size: 26px; } .words h2 { font-size: 22px; }
   .words p { font-size: 13px; margin-top: 8px; } .words p.staff, .words .note { display: none; }
-  .words .eyebrow { margin-bottom: 8px; } .words .actions { margin-top: 12px; } .words .button { padding: 9px 14px; font-size: 13px; }
+  .words .eyebrow { margin-bottom: 8px; } .words .actions { margin-top: 12px; } .words .button, .finale .button { padding: 9px 14px; font-size: 13px; }
   #researchers .words { bottom: 8vh; }
   .ask-q { min-width: 0; max-width: 48vw; padding: 7px 11px 8px; } .ask-q .t { font-size: 12.5px; } .ask-q .s { display: none; }
   .lbl small, .lbl em { display: none !important; }
 }
+
+/* The finale: morning back into night, an eyepiece of light behind one large line, the steps as four quiet cards. */
+.finale { position: relative; overflow: hidden; text-align: center; color: #f3f1ec; padding: 38vh 6vw 16vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f1e6e2 6%, #d7bfc8 10%, #7d6f9e 15%, #2b2f63 20%, #0b1230 25%, #04050b 31%); }
+.finale-glow { position: absolute; left: 50%; top: 58%; width: min(980px, 150vw); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(242, 196, 109, .13), rgba(140, 194, 255, .06) 48%, rgba(4, 5, 11, 0) 72%); }
+.finale-glow::after { content: ""; position: absolute; inset: 21%; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(243, 241, 236, .07), 0 0 120px rgba(242, 196, 109, .05); }
+.finale-inner { position: relative; max-width: 1120px; margin: 0 auto; }
+.finale .eyebrow { color: #727894; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 2.4vh; }
+.finale h2 { margin: 0; font-size: clamp(48px, 8vw, 132px); line-height: .98; font-weight: 600; letter-spacing: -0.045em;
+  background: linear-gradient(180deg, #fffaf0 0%, #e9e4da 70%, #cfc9bd 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.finale .say { max-width: 32em; margin: 2.6vh auto 0; color: #b9bccb; font-size: clamp(15px, 1.25vw, 19px); line-height: 1.5; }
+.finale .actions { margin-top: 4.4vh; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.finale .note.send { margin-top: 10px; color: #727894; font-size: 12px; }
+.finale-steps { list-style: none; padding: 0; margin: 10vh 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; text-align: left; }
+.finale-steps li { padding: 22px 20px 24px; border-radius: 18px; background: rgba(255, 255, 255, .025); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.finale-steps b { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 700; color: #04050b; background: #f2c46d; box-shadow: 0 0 18px rgba(242, 196, 109, .35); }
+.finale-steps li:nth-child(4) b { background: #8cc2ff; box-shadow: 0 0 18px rgba(140, 194, 255, .35); }
+.finale-steps h3 { margin: 16px 0 6px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: #f3f1ec; }
+.finale-steps p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #9a9fb3; }
+.finale .fine { margin: 6vh auto 0; max-width: 48em; font-size: 12.5px; line-height: 1.6; color: #727894; }
+.finale .fine a { color: #b9bccb; }
+@media (max-width: 860px) { .finale-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .finale { padding: 30vh 20px 12vh; } .finale-steps { grid-template-columns: 1fr; margin-top: 7vh; } .finale-steps li { display: grid; grid-template-columns: 26px 1fr; column-gap: 14px; padding: 18px; } .finale-steps h3 { margin: 2px 0 4px; } .finale-steps p { grid-column: 2; } }
+/* The footer, in the finale's night. */
+body.home .foot { background: #04050b; border-top: 1px solid rgba(243, 241, 236, .06); color: #727894; }
+body.home .foot a { color: #b9bccb; }
+.finale .eyebrow { display: block; text-align: center; }

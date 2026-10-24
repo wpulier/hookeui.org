@@ -19,6 +19,7 @@ function build(section, sky) {
   const U = pointsUniforms(); U.intro.value = 1;
   const tex = stemSprite(sky.cells);
   const tags = ['YOUR MAC', 'CLOUD'].map((t, i) => { const el = document.createElement('div'); el.className = `res-tag ${i ? 'cloud' : 'mac'}`; el.textContent = t; section.appendChild(el); return el; });
+  let freeTop = 0;
   let field = null, tiles = [], agents = [], agentsGeo = null, agentsPts = null, reset = 0, cols = 0, rows = 0, W = 1, H = 1, narrow = false;
   const SP = 1.0, TRAIL = 4;
 
@@ -49,7 +50,7 @@ function build(section, sky) {
   });
 
   function layout(s) {
-    W = s.W; H = s.H; narrow = s.canvas.offsetTop > 20;
+    W = s.W; H = s.H; narrow = s.phone; freeTop = s.top;
     view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.3 : 1);
     cols = narrow ? 6 : 15; rows = narrow ? 10 : 14;
     const n = cols * rows, old = tiles;
@@ -77,7 +78,7 @@ function build(section, sky) {
     const span = Math.max(cols, rows * (W / H)) * SP;
     const d = narrow ? rows * SP * 1.25 : span * 0.82;
     tileMat.uniforms.far.value = d * 1.9;
-    aim(camera, new THREE.Vector3(narrow ? 0 : SP * 1.5, 0, narrow ? -0.5 : -0.8), narrow ? 0.95 : 0.62, d, { x: 0, y: 0, w: W, h: H }, W, H);
+    aim(camera, new THREE.Vector3(narrow ? 0 : SP * 1.5, 0, narrow ? -0.5 : -0.8), narrow ? 0.95 : 0.62, d, { x: 0, y: freeTop, w: W, h: H - freeTop }, W, H);
   }
 
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3(), v = new THREE.Vector3();
@@ -125,7 +126,7 @@ function build(section, sky) {
       const ox = (cols / 2 + 0.6) * SP, oz = (rows / 2 + 0.6) * SP;
       [[-ox, oz], [ox, -oz]].forEach(([x, z], i) => {
         let [px, py] = toScreen(new THREE.Vector3(x, 0, z), null, camera, W, H, v);
-        px = Math.max(16, Math.min(W - 80, px)); py = Math.max(80, Math.min(H - 30, py)) + s.canvas.offsetTop;
+        px = Math.max(16, Math.min(W - 80, px)); py = Math.max(Math.max(80, freeTop + 10), Math.min(H - 30, py)) + s.canvas.offsetTop;
         tags[i].style.transform = `translate(${px}px, ${py}px)`;
       });
       composer.render(dt);

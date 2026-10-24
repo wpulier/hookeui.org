@@ -45,16 +45,17 @@ function build(section, entries, sky) {
   ripple.rotation.x = -Math.PI / 2; ripple.position.y = 0.01; world.add(ripple);
   let rippleT = 9;
 
+  let freeTop = 0;
   let W = 1, H = 1, narrow = false, rect = null, spin = 0, wordsRight = 0, lastStatus = '', lastLens = '';
   const target = new THREE.Vector3(0, 0.15, 0), v = new THREE.Vector3();
   const EL = () => (narrow ? 0.82 : 0.72);
   const place = (d) => aim(camera, target, EL(), d, rect, W, H);
   function layout(s) {
-    W = s.W; H = s.H; narrow = s.canvas.offsetTop > 20;
+    W = s.W; H = s.H; narrow = s.phone; freeTop = s.top;
     view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.25 : 1);
     const words = section.querySelector('.words').getBoundingClientRect(), cv = s.canvas.getBoundingClientRect();
     wordsRight = narrow ? 0 : words.right - cv.left;
-    rect = narrow ? { x: 36, y: 26, w: W - 72, h: H - 70 } : { x: Math.max(W * 0.44, wordsRight + 60), y: Math.min(80, H * 0.16), w: 0, h: H - Math.min(150, H * 0.3) };
+    rect = narrow ? { x: 36, y: freeTop + 26, w: W - 72, h: H - freeTop - 70 } : { x: Math.max(W * 0.44, wordsRight + 60), y: Math.min(80, H * 0.16), w: 0, h: H - Math.min(150, H * 0.3) };
     if (!narrow) rect.w = W - rect.x - 90;
     const bounds = () => nodes.map((n) => n.pos.clone().add(new THREE.Vector3(0, 0.12, 0))).concat(nodes.map((n) => n.pos));
     world.rotation.y = 0; world.updateMatrixWorld();
@@ -122,7 +123,7 @@ function build(section, entries, sky) {
         return { n, x, y: y - 10 + off, w: n.lw, h: n.lh, z };
       });
       items.sort((a, b) => a.z - b.z);
-      keepApart(items, { l: narrow ? 4 : Math.max(4, wordsRight + 12), t: narrow ? off + 2 : 70, r: W - 4, b: off + H - 4 });
+      keepApart(items, { l: narrow ? 4 : Math.max(4, wordsRight + 12), t: narrow ? freeTop + 2 : 70, r: W - 4, b: off + H - 4 });
       for (const it of items) {
         it.n.el.style.opacity = it.hidden ? '0' : ''; it.n.el.style.pointerEvents = it.hidden ? 'none' : '';
         it.n.el.style.transform = `translate(${it.left}px, ${it.top}px)`;

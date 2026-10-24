@@ -27,7 +27,8 @@ Will, 2026-10-23; its evidence is the hosted agent-access spec and tickets, `doc
 | Switch them on, stack them, and ask about any spot | AGENTS.md "Turn on" sheet; `services/orchestrator/brain/AGENTS.md` (pointing, outlines, "the outline check"); `docs/architecture/seeing-and-acting.md` |
 | Page description and link card: the first screen's headline and paragraph | As the rows above |
 | Meet your staff: behind every name are people who spent years teaching a model to see one thing well; Hooke brings their work a click from your microscope, and names it on every result it helps make | As the story page's "Meet your staff" row; each model's maker shown on pointing comes from its catalog `credit.authors` (`home/entries.json` `by`) |
-| The cork section and the install steps | The same text and evidence as the story page: its rows below |
+| The cork section | The same text and evidence as the story page: its rows below |
+| Finale: free, open source, for Macs with Apple silicon; a signed Mac app installed with Finder, no terminal or developer tools; the four steps (download and open the disk image; drag to Applications; first launch prepares Python and packages, about 350 MB, step by step on screen; the bundled example measures a real microscope image on your Mac); the example and local models need no key, chat, voice and naming use a cloud provider with your own key; source on GitHub with the first public release | The story page's install rows ("Come and look", the steps, the key note) and its licence row |
 
 ## Story page (story.html)
 

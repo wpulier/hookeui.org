@@ -73,16 +73,17 @@ function build(section, entries, sky) {
   scene.add(thread);
   const beadGeo = pointsGeometry(layers.length); scene.add(new THREE.Points(beadGeo, pointsMaterial(U)));
 
+  let freeTop = 0;
   let W = 1, H = 1, narrow = false, gap = 0.3, yaw = -0.35, rect = null, dist = 8, el = 0.42, picked = -1, lastPickAt = '', shown = -1;
   const target = new THREE.Vector3(0, 0, 0), v = new THREE.Vector3();
   const place = (d) => aim(camera, target, el, d, rect, W, H);
   function setGap(gp) { gap = gp; layers.forEach((l, k) => { l.g.position.y = (k - (layers.length - 1) / 2) * gp; }); stack.updateMatrixWorld(true); }
   function layout(s) {
-    W = s.W; H = s.H; narrow = s.canvas.offsetTop > 20;
+    W = s.W; H = s.H; narrow = s.phone; freeTop = s.top;
     view.size(W, H, s.dpr); U.px.value = s.dpr * H / 900 * (narrow ? 1.2 : 1);
     el = narrow ? 0.62 : 0.42;
     const words = section.querySelector('.words').getBoundingClientRect(), cv = s.canvas.getBoundingClientRect();
-    rect = narrow ? { x: 8, y: 8, w: W - 16, h: H - 16 } : { x: Math.max(W * 0.42, words.right - cv.left + 30), y: 80, w: 0, h: H - 130 };
+    rect = narrow ? { x: 8, y: freeTop + 8, w: W - 16, h: H - freeTop - 16 } : { x: Math.max(W * 0.42, words.right - cv.left + 30), y: 80, w: 0, h: H - 130 };
     if (!narrow) rect.w = W - rect.x - W * 0.14;
     setGap(narrow ? 0.46 : 0.6);
     const bounds = () => { const b = []; layers.forEach((l) => { for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; b.push(new THREE.Vector3(Math.cos(a) * 1.2, l.g.position.y, Math.sin(a) * 1.2)); } }); return b; };
@@ -135,7 +136,7 @@ function build(section, entries, sky) {
       for (const key2 of ['position', 'start', 'color', 'tint', 'size', 'lit']) B[key2].needsUpdate = true;
       // each layer's name at its right edge, kept apart
       const items = layers.map((l) => { if (!l.lw) { l.lw = l.el.offsetWidth; l.lh = l.el.offsetHeight; } const [x, y] = toScreen(new THREE.Vector3(1.32, l.g.position.y, 0), null, camera, W, H, v); return { l, x: x + l.lw / 2 + 6, y: y + 8 + s.canvas.offsetTop, w: l.lw, h: l.lh }; });
-      items.sort((a, b) => b.y - a.y); keepApart(items, { l: 4, t: (narrow ? s.canvas.offsetTop : 70) + 2, r: W - 4, b: s.canvas.offsetTop + H - 4 });
+      items.sort((a, b) => b.y - a.y); keepApart(items, { l: 4, t: (narrow ? freeTop : 70) + 2, r: W - 4, b: s.canvas.offsetTop + H - 4 });
       for (const it of items) { it.l.el.style.opacity = it.hidden ? '0' : ''; it.l.el.style.transform = `translate(${it.left}px, ${it.top}px)`; }
       composer.render(dt);
     },

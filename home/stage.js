@@ -4,7 +4,8 @@ export const rnd = (a, b) => a + Math.random() * (b - a);
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // stage(section, { init(s), frame(s, dt), visibility(visible) }) -> s
-// s: canvas, W, H, dpr, mx, my (pointer in canvas pixels, -9999 when away), down, dragX (horizontal drag this frame),
+// s: canvas, W, H, dpr, phone (the stacked phone layout: words over the top of the art), top (where the art's free area
+// starts below the words, in canvas pixels; 0 when not a phone), mx, my (pointer in canvas pixels, -9999 when away), down, dragX (horizontal drag this frame),
 // clicks (this frame's taps, {x, y}), t (seconds), idle (since the pointer moved), visible, still (reduced motion).
 // init runs on start and on every resize; frame runs each animation frame only while the section is on screen;
 // visibility, if given, hears the section arrive and leave (to free and restore GPU memory). With reduced motion frame
@@ -12,7 +13,8 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export function stage(section, { init, frame, visibility }) {
   const cv = section.querySelector('canvas.art');
   const mq = matchMedia('(prefers-reduced-motion: reduce)');
-  const s = { canvas: cv, W: 0, H: 0, dpr: 1, mx: -9999, my: -9999, down: false, dragX: 0, clicks: [], t: 0, idle: 99, visible: false, still: mq.matches };
+  const phoneQ = matchMedia('(max-width: 760px) and (orientation: portrait), (max-width: 520px)');
+  const s = { canvas: cv, W: 0, H: 0, dpr: 1, phone: false, top: 0, mx: -9999, my: -9999, down: false, dragX: 0, clicks: [], t: 0, idle: 99, visible: false, still: mq.matches };
   cv.dataset.frames = '0'; cv.dataset.pointer = '';
   let frames = 0, raf = 0, last = 0, press = null;
   const at = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
@@ -28,6 +30,9 @@ export function stage(section, { init, frame, visibility }) {
     s.W = cv.clientWidth; s.H = cv.clientHeight;
     if (!s.W || !s.H) { s.W = 0; return; }
     s.dpr = Math.min(devicePixelRatio || 1, s.W < 700 ? 1.75 : 2);
+    s.phone = phoneQ.matches;
+    const words = section.querySelector('.words');
+    s.top = s.phone && words ? Math.max(0, words.getBoundingClientRect().bottom - cv.getBoundingClientRect().top) : 0;
     init(s);
     once();
   }

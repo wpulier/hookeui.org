@@ -51,6 +51,7 @@ async function homeChapters(browser) {
   });
 }
 
+// On a phone the art fills each chapter and the words sit over its top, so the glow runs up under them (no hard edge).
 async function phoneLayout(browser) {
   await withPage(browser, { width: 390, height: 844 }, async (page) => {
     await page.goto(`${BASE}/`);
@@ -59,12 +60,29 @@ async function phoneLayout(browser) {
     if (w > 390) throw new Error(`page is ${w}px wide at 390`);
     for (const id of IDS) {
       const r = await page.evaluate((i) => {
-        const c = document.getElementById(i);
-        return [c.querySelector('.words').getBoundingClientRect().bottom, c.querySelector('canvas.art').getBoundingClientRect().top];
+        const c = document.getElementById(i), sec = c.getBoundingClientRect(), cv = c.querySelector('canvas.art').getBoundingClientRect(), wd = c.querySelector('.words').getBoundingClientRect();
+        return { top: cv.top - sec.top, h: cv.height, sh: sec.height, words: wd.top - sec.top };
       }, id);
-      if (r[0] > r[1] + 0.5) throw new Error(`${id}: words end at ${r[0]} but the canvas starts at ${r[1]}`);
+      if (Math.abs(r.top) > 1 || Math.abs(r.h - r.sh) > 2) throw new Error(`${id}: the art doesn't fill the chapter (top ${r.top}, ${r.h} of ${r.sh}px)`);
+      if (r.words > 1) throw new Error(`${id}: the words start ${r.words}px down`);
     }
-  });
+  }, { hasTouch: true, isMobile: true });
+}
+
+// The finale: the line, both buttons, four steps, at a laptop and on a phone.
+async function finale(browser) {
+  for (const [w, h] of [[1440, 900], [390, 844]]) {
+    await withPage(browser, { width: w, height: h }, async (page) => {
+      await page.goto(`${BASE}/`);
+      const t = (await page.locator('#install h2').innerText()).trim();
+      if (t !== 'Come and look.') throw new Error(`finale says "${t}"`);
+      const steps = await page.locator('#install .finale-steps li').count();
+      if (steps !== 4) throw new Error(`${steps} steps`);
+      const sw = await page.evaluate(() => document.documentElement.scrollWidth);
+      if (sw > w) throw new Error(`page is ${sw}px wide at ${w}`);
+      if ((await page.locator('#install a.button').count()) !== 2) throw new Error('the finale lacks its two buttons');
+    });
+  }
 }
 
 async function oldAnchors(browser) {
@@ -458,7 +476,7 @@ async function scrollIsNotATap(browser) {
   }, { hasTouch: true, isMobile: true });
 }
 
-const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap };
+const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale };
 
 const picked = process.argv.slice(2);
 const unknown = picked.filter((n) => !CHECKS[n]);
