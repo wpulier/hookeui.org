@@ -1,6 +1,6 @@
 // Chapter 3, Workspace: the stem as a stack of layers in depth: the image, then what each model made of it, registered
-// to each other. The pointer turns the stack and opens it; a pointed-at cell lights through every layer, and the
-// readout names each layer's model.
+// to each other. Scrolling the chapter in pulls the layers apart, from one disc to the full stack; the pointer turns it;
+// a pointed-at cell lights through every layer, and the readout names each layer's model.
 import { THREE, GOLD, PALE, lin, webgl, makeView, pointsUniforms, pointsMaterial, pointsGeometry, aim, fitDistance, toScreen, keepApart, FRAME } from './gl.js';
 import { stage, startArt, artFailed, clamp } from './stage.js';
 
@@ -73,7 +73,7 @@ function build(section, entries, sky) {
   scene.add(thread);
   const beadGeo = pointsGeometry(layers.length); scene.add(new THREE.Points(beadGeo, pointsMaterial(U)));
 
-  let freeTop = 0;
+  let freeTop = 0, fullGap = 0.6;
   let W = 1, H = 1, narrow = false, gap = 0.3, yaw = -0.35, rect = null, dist = 8, el = 0.42, picked = -1, lastPickAt = '', shown = -1;
   const target = new THREE.Vector3(0, 0, 0), v = new THREE.Vector3();
   const place = (d) => aim(camera, target, el, d, rect, W, H);
@@ -89,7 +89,7 @@ function build(section, entries, sky) {
     const bounds = () => { const b = []; layers.forEach((l) => { for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; b.push(new THREE.Vector3(Math.cos(a) * 1.2, l.g.position.y, Math.sin(a) * 1.2)); } }); return b; };
     stack.rotation.y = -0.35; stack.updateMatrixWorld(true);
     dist = fitDistance(place, bounds, camera, rect, W, H);
-    setGap(narrow ? 0.32 : 0.42);
+    fullGap = narrow ? 0.46 : 0.6;
   }
 
   window.hookeHome = window.hookeHome || {};
@@ -102,9 +102,12 @@ function build(section, entries, sky) {
       U.time.value = s.t;
       const here = s.mx > -999, k = 1 - Math.pow(0.94, dt * 60);
       // held still while a cell is picked, so its readout can be read; otherwise the pointer turns and opens the stack
-      const wantGap = here ? (narrow ? 0.2 : 0.24) + clamp(1 - s.my / H, 0, 1) * (narrow ? 0.26 : 0.36) : (narrow ? 0.32 : 0.42) + Math.sin(s.t * 0.6) * 0.05;
+      // how far the chapter has come up the screen: 0 until its top is 85% of the way down, 1 once it fills the screen
+      const top = section.getBoundingClientRect().top, p = clamp((0.85 - top / innerHeight) / 0.85, 0, 1), e = p * p * (3 - 2 * p);
+      const wantGap = s.still ? fullGap : 0.025 + e * (fullGap - 0.025) + (here ? (0.5 - s.my / H) * 0.06 : Math.sin(s.t * 0.6) * 0.015 * e);
       const wantYaw = here ? -1.0 + (s.mx / W) * 1.3 : -0.35 + Math.sin(s.t * 0.15) * 0.35;
-      if (picked < 0) { setGap(gap + (wantGap - gap) * k); yaw += (wantYaw - yaw) * k; }
+      setGap(s.still ? wantGap : gap + (wantGap - gap) * (1 - Math.pow(0.82, dt * 60)));
+      if (picked < 0) yaw += (wantYaw - yaw) * k;
       stack.rotation.y = yaw; stack.updateMatrixWorld(true);
       // which cell is pointed at: the nearest drawn cell on any layer, found again when the pointer moves
       const key = `${Math.round(s.mx)},${Math.round(s.my)}`;
