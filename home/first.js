@@ -96,12 +96,12 @@ function build(section, entries, sky) {
   const MAX = 1600, TRAIL = 3, motesGeo = pointsGeometry(MAX * TRAIL);
   world.add(new THREE.Points(motesGeo, pointsMaterial(U)));
   const motes = [];
-  const sendUp = (n) => motes.push({ kind: 'up', n, curve: curveUp(n), t: 0, sp: 0.55 + Math.random() * 0.3 });
-  function sendDown(n, near) {
+  const sendUp = (n, t = 0) => motes.push({ kind: 'up', n, curve: curveUp(n), t, sp: 0.9 + Math.random() * 0.4 });
+  function sendDown(n, near, t0 = 0) {
     let i = Math.random() * cells.length | 0;
     if (near) for (let k = 0; k < 40; k++) { const j = Math.random() * cells.length | 0; if (cellPos(j).distanceTo(near) < 0.3) { i = j; break; } }
     const to = cellPos(i), mid = n.pos.clone().lerp(to, 0.5); mid.y += 0.35; mid.x += (Math.random() - 0.5) * 0.4;
-    motes.push({ kind: 'down', n, cell: i, curve: new THREE.QuadraticBezierCurve3(n.pos.clone(), mid, to), t: 0, sp: 0.45 + Math.random() * 0.35 });
+    motes.push({ kind: 'down', n, cell: i, curve: new THREE.QuadraticBezierCurve3(n.pos.clone(), mid, to), t: t0, sp: 0.8 + Math.random() * 0.4 });
   }
 
   // spores off the specimen, in its own colours and the two lights
@@ -200,7 +200,7 @@ function build(section, entries, sky) {
   }
 
   // the loop
-  let qi = 0, t0 = 0;
+  let qi = 0, t0 = -3.6, seeded = false;
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
   const tilt = { x: 0, y: 0 };
   stage(section, {
@@ -208,7 +208,7 @@ function build(section, entries, sky) {
     visibility: view.visibility,
     frame(s, dt) {
       const T = s.t; U.time.value = T; if (sp) sp.uniforms.time.value = T;
-      U.intro.value = s.still ? 1 : Math.min(1, U.intro.value + dt / 2.8); if (sp) sp.uniforms.intro.value = U.intro.value;
+      U.intro.value = s.still ? 1 : Math.min(1, U.intro.value + dt / 1.6); if (sp) sp.uniforms.intro.value = U.intro.value;
       let t = s.still ? 6 : T - t0 - 1.6;
       // taps: the question asks the next one; the specimen asks every chosen model about that spot
       const off = s.canvas.offsetTop, pb = pill.getBoundingClientRect(), cb = s.canvas.getBoundingClientRect();
@@ -233,17 +233,18 @@ function build(section, entries, sky) {
       const cur = F.questions[qi], chosen = Object.keys(cur.use), live = t > 0;
       section.dataset.plan = chosen.join(',');
       pill.classList.toggle('on', live);
-      const qText = cur.q.slice(0, Math.round(clamp(t / 1.3, 0, 1) * cur.q.length));
+      const qText = cur.q.slice(0, Math.round(clamp(t / 0.9, 0, 1) * cur.q.length));
       if (qText !== lastQ) { qt.textContent = qText; lastQ = qText; }
       const nc = chosen.filter((id) => E[id].where === 'cloud').length, nm = chosen.length;
       const sText = narrow ? `${nm} models · <b>${nm - nc} Mac</b> · <b class="c">${nc} cloud</b> · in parallel`
         : `${nm} models stacked · <b>${nm - nc} on your Mac</b> · <b class="c">${nc} in the cloud</b> · researchers in parallel`;
       if (sText !== lastS) { qs.innerHTML = sText; lastS = sText; }
-      qs.classList.toggle('on', t > 2.2 && t < DUR - 0.8);
+      qs.classList.toggle('on', t > 1.2 && t < DUR - 0.8);
       // the plan: chosen models light and their curves grow
-      const grow = clamp((t - 1.4) / 1.0, 0, 1), out = t > DUR - 1 ? Math.max(0, DUR - t) : 1;
+      const grow = clamp((t - 0.5) / 0.7, 0, 1), out = t > DUR - 1 ? Math.max(0, DUR - t) : 1;
       nodes.forEach((n, i) => {
-        const want = chosen.includes(n.id) && t > 1.4 ? out : 0;
+        const want = chosen.includes(n.id) && t > 0.5 ? out : 0;
+        if (!seeded && want) n.on = 1;
         n.on += (want - n.on) * (s.still ? 1 : Math.min(1, dt * 4)); n.fire *= Math.pow(0.9, dt * 60);
         nodeGeo.attributes.lit.setX(i, Math.min(1.6, n.on + n.fire * 0.6));
         n.line.geometry.setDrawRange(0, Math.round(61 * grow * (n.on > 0.05 ? 1 : 0))); n.line.material.opacity = 0.34 * n.on;
@@ -251,9 +252,15 @@ function build(section, entries, sky) {
         if (isOn !== n.wasOn) { n.el.classList.toggle('on', isOn); n.wasOn = isOn; n.measured = false; }
         const why = cur.use[n.id] || '';
         if (why && why !== n.why) { n.el.querySelector('em').textContent = why; n.why = why; n.measured = false; }
-        if (!s.still && n.on > 0.5 && t > 2.4 && t < DUR - 1.4 && Math.random() < dt * (narrow ? 3 : 2.2)) sendUp(n);
+        if (!s.still && n.on > 0.5 && t > 1.0 && t < DUR - 1.4 && Math.random() < dt * (narrow ? 4.5 : 3.5)) sendUp(n);
       });
       nodeGeo.attributes.lit.needsUpdate = true;
+      if (!seeded && !s.still) {
+        seeded = true;
+        const L = spec.geometry.attributes.lit, Tn = spec.geometry.attributes.tint, lit = nodes.filter((n) => n.on > 0.5);
+        lit.forEach((n) => { for (let k = 0; k < 7; k++) sendDown(n, null, Math.random() * 0.9); for (let k = 0; k < 2; k++) sendUp(n, Math.random() * 0.8); });
+        for (let k = 0; k < 140; k++) { const i = Math.random() * cells.length | 0, n = lit[k % lit.length]; if (n) { L.setX(i, 0.4 + Math.random() * 0.6); Tn.setXYZ(i, n.col.r, n.col.g, n.col.b); } }
+      }
       // motes: up to a model, then that model's light down into a cell
       const A = motesGeo.attributes; let w = 0;
       for (let k = motes.length - 1; k >= 0; k--) {

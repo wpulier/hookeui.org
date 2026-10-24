@@ -31,6 +31,7 @@ after each change.
    | How the home page looks | `home/home.css` |
    | The first screen (workspace, specimen, question, every model) | `home/first.js` |
    | Researchers, Workspace, Capabilities chapters | `home/researchers.js`, `home/workspace.js`, `home/capabilities.js` |
+   | Open by design (harnesses and the community catalog around Hooke) | `index.html` (`#harness`) and the map in `home/open.js` |
    | What every chapter shares (three.js view, glow, points, spores, camera fitting) | `home/gl.js`; canvas, pointer and data in `home/stage.js` |
    | Model names, Mac or cloud, the first screen's questions | `home/entries.json` (checked against the app's catalog by `tools/check_home.py --catalog`) |
    | Each chapter's still (no WebGL, no script) | `media/home-*.jpg` |
