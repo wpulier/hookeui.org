@@ -85,8 +85,8 @@ function build(section, entries, sky) {
           for (let i = 0, k = 0; i < cells.length; i++) if (on.length && cellPos(i, v).distanceTo(p) < 0.4) { const q = on[k++ % on.length]; L.setX(i, 1); Tn.setXYZ(i, q.col.r, q.col.g, q.col.b); by[i] = nodes.indexOf(q); }
         } else if (p) { nodes.filter((q) => q.on).forEach((q) => { for (let k = 0; k < 3; k++) fire(q, p); }); ripple.position.set(p.x, 0.01, p.z); rippleT = 0; }
       }
-      // the ring turns slowly; a sideways drag spins it
-      spin += (s.dragX / W) * 3; spin += dt * 0.05;
+      // the ring turns slowly on its own
+      spin += dt * 0.05;
       world.rotation.y = spin; world.updateMatrixWorld();
       const hover = s.mx > -999 ? nodeAt(s.mx, s.my) : null;
       const A = nodeGeo.attributes;

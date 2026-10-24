@@ -255,6 +255,7 @@ async function firstCycles(browser) {
     const [q0, p0] = await read();
     if (q0 !== Qs[0].q) throw new Error(`question is "${q0}", expected "${Qs[0].q}"`);
     if (p0 !== Object.keys(Qs[0].use).join(',')) throw new Error(`data-plan is "${p0}"`);
+    await page.waitForFunction(() => document.getElementById('ask-q').classList.contains('on'));
     const b = await page.locator('#ask-q').boundingBox();
     await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
     await page.waitForTimeout(2500);
@@ -525,7 +526,20 @@ async function litModelsNamed(browser) {
   }
 }
 
-const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale, openHarness, energyAtOnce, litModelsNamed };
+// The question is sent: it disappears for a moment while the plan forms, then returns with what it stacked.
+async function questionSends(browser) {
+  await withPage(browser, { width: 1440, height: 900 }, async (page) => {
+    await page.goto(`${BASE}/`);
+    const seen = [];
+    for (let k = 0; k < 30; k++) { seen.push(await page.$eval('#ask-q', (e) => (e.classList.contains('sent') ? 'sent' : e.classList.contains('on') ? 'on' : 'off'))); await page.waitForTimeout(150); }
+    const s = seen.join(',');
+    if (!/on.*sent.*on/.test(s)) throw new Error(`the question went ${s}`);
+    const tag = (await page.locator('#ask .first-spec').innerText()).trim().toLowerCase();
+    if (tag !== 'live specimen') throw new Error(`tag reads "${tag}"`);
+  });
+}
+
+const CHECKS = { storyRenders, homeChapters, homeCopy, phoneLayout, oldAnchors, corkPlate, animatesOnlyOnScreen, reducedMotion, tapPersists, touchScroll, dataFailure, noWebGL, firstCycles, labelsApart, specimenSize, workspaceThread, workspaceThreadStill, capToggle, capAsk, resizeKeepsState, wordsVisible, sendToMac, capMakers, webgl1Only, noRoundRect, reducedMotionTaps, scrollIsNotATap, finale, openHarness, energyAtOnce, litModelsNamed, questionSends };
 
 const picked = process.argv.slice(2);
 const unknown = picked.filter((n) => !CHECKS[n]);
