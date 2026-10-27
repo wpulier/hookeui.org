@@ -1,0 +1,77 @@
+name: Approve Stable release
+run-name: Stable ${{ inputs.mode }} · ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Publish a prepared draft, or rehearse the approval gate without publishing
+        type: choice
+        options: [publish, recover, probe]
+        default: probe
+        required: true
+      release_id:
+        description: Numeric ID of the verified draft (unused for probe)
+        type: string
+        default: '0'
+      expected_sha256:
+        description: SHA256 of the exact assets, release metadata and previous Stable
+        type: string
+        default: ''
+      request_id:
+        description: Unique request identifier from the release operator
+        type: string
+        required: true
+      bad_release_id:
+        description: Current release to withdraw during recovery
+        type: string
+        default: '0'
+      bad_sha256:
+        description: Exact withdrawn-release binding for recovery
+        type: string
+        default: ''
+      reason:
+        description: Public recovery reason (no private information)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stable-publication
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  MODE: ${{ inputs.mode }}
+  RELEASE_ID: ${{ inputs.release_id }}
+  EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+  BAD_RELEASE_ID: ${{ inputs.bad_release_id }}
+  BAD_SHA256: ${{ inputs.bad_sha256 }}
+  REASON: ${{ inputs.reason }}
+
+jobs:
+  verify:
+    if: github.repository == 'wpulier/hookeui.org' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: python3 release_gate.py
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: stable
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Recheck approved bytes and publish (probe never writes)
+        run: python3 release_gate.py --activate
